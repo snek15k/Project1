@@ -4,7 +4,7 @@ from django.db import models
 class Client(models.Model):
     "Модель получатель рассылки"
     email = models.EmailField(unique=True, db_index=True)
-    full_name = models.CharField(max_length=100, verbose_name='Ф.И.О')
+    full_name = models.CharField(max_length=100, verbose_name='ФИО', null=False, blank=False)
     comment = models.TextField(verbose_name='Комментарий')
 
 
