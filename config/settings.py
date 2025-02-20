@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'clients',
     'mail_messages',
     'mailings',
+    'attempt'
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
