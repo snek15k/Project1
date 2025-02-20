@@ -4,7 +4,7 @@ from .models import Client
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    pass
-
+    list_display = ('email', 'full_name', 'comment')
+    search_fields = ('email', 'full_name')
 
 
