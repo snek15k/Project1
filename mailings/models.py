@@ -1,5 +1,6 @@
 from allauth.account.views import email
 from django.db import models
+from django.conf import settings
 
 from clients.models import Client
 from mail_messages.models import Message
@@ -13,11 +14,20 @@ class Mailing(models.Model):
         ('completed', 'Завершена'),
     ]
 
-    start_time = models.DateTimeField(verbose_name='Дата и время начала рассылки', auto_now_add=True, db_index=True)
-    end_time = models.DateTimeField(verbose_name='Дата и время окончания рассылки', db_index=True)
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='created', verbose_name='Статус', db_index=True)
-    message = models.ForeignKey(Message, on_delete=models.CASCADE, verbose_name='Сообщение')
-    recipients = models.ManyToManyField(Client, verbose_name='Получатели')
+    name = models.CharField(max_length=150, verbose_name='Название рассылки')
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, verbose_name='Сообщение', related_name='mailings')
+    clients = models.ManyToManyField(Client, verbose_name='Клиенты', related_name='mailings')
+    start_date_time = models.DateTimeField(verbose_name='Дата и время первой отправки', blank=True, null=True,
+                                           editable=False)
+    end_date_time = models.DateTimeField(verbose_name='Дата и время окончания отправки', blank=True, null=True,
+                                         editable=False)
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='created', verbose_name='Статус',
+                              db_index=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='Владелец', )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата изменения')
+    is_active = models.BooleanField(default=True, verbose_name='Активна')
+
 
     def __str__(self):
         return f'Рассылка: {self.message} | Статус: {self.get_status_display()}'
@@ -26,4 +36,10 @@ class Mailing(models.Model):
     class Meta:
         verbose_name = 'Рассылка'
         verbose_name_plural = 'Рассылки'
+        permissions = [
+            ("view_mailing", "Can view mailing"),
+            ("add_mailing", "Can add mailing"),
+            ("change_mailing", "Can change mailing"),
+            ("delete_mailing", "Can delete mailing"),
+        ]
 
