@@ -36,10 +36,4 @@ class Mailing(models.Model):
     class Meta:
         verbose_name = 'Рассылка'
         verbose_name_plural = 'Рассылки'
-        permissions = [
-            ("view_mailing", "Can view mailing"),
-            ("add_mailing", "Can add mailing"),
-            ("change_mailing", "Can change mailing"),
-            ("delete_mailing", "Can delete mailing"),
-        ]
 

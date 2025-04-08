@@ -15,9 +15,3 @@ class Message(models.Model):
     class Meta:
         verbose_name = 'Сообщение'
         verbose_name_plural = 'Сообщения'
-        permissions = [
-            ("view_message", "Can view message"),
-            ("add_message", "Can add message"),
-            ("change_message", "Can change message"),
-            ("delete_message", "Can delete message"),
-        ]
