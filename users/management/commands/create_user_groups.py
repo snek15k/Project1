@@ -1,7 +1,10 @@
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
+
+from clients.models import Client
 from mail_messages.models import Message
+from mailings.models import Mailing
 
 
 class Command(BaseCommand):
@@ -11,18 +14,10 @@ class Command(BaseCommand):
         group, created = Group.objects.get_or_create(name='Менеджеры')
 
         permissions = [
-            ('client', 'client', 'view_client'),
-            ('mailing', 'mailing', 'view_mailing'),
-            ('users', 'user', 'view_user'),
+            ('clients', 'client', 'can_view_client'),
+            ('mailings', 'mailing', 'can_view_mailing'),
             ('users', 'user', 'block_user'),
-            ('mail_messages', 'message', 'add_message'),
-            ('mail_messages', 'message', 'view_message'),
-            ('mail_messages', 'message', 'change_message'),
-            ('mail_messages', 'message', 'delete_message'),
-            ('mailing', 'mailing', 'add_mailing'),
-            ('mailing', 'mailing', 'view_mailing'),
-            ('mailing', 'mailing', 'change_mailing'),
-            ('mailing', 'mailing', 'delete_mailing'),
+            ('mail_messages', 'message', 'can_view_message'),
         ]
 
         for app_label, model, codename in permissions:

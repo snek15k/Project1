@@ -1,16 +1,50 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import cache_page
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.cache import cache
 
 from clients.views import is_manager
-from .models import Mailing
+from .models import Mailing, Client
 from .forms import MailingForm
+from .services import send_mailing
+
+
+@login_required
+def send_mailing(request):
+    if request.method == 'POST':
+        form = MailingForm(request.POST)
+        if form.is_valid():
+            mailing = form.cleaned_data['mailing']
+            clients = form.cleaned_data['clients']
+            send_to_all = form.cleaned_data['send_to_all']
+
+            if send_to_all:
+                clients = Client.objects.all()
+
+            send_mailing(mailing.pk)
+            return redirect('mailing_reports')
+    else:
+        form = MailingForm()
+    return render(request, 'mailing/send_mailing.html', {'form': form})
+
+
+class HomeView(TemplateView):
+    template_name = 'clients/home.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if is_manager(self.request.user):
+            context['mailings'] = Mailing.objects.all()
+        else:
+            context['mailings'] = Mailing.objects.filter(owner=self.request.user)
+        context['active_mailings'] = Mailing.objects.filter(is_active=True).count()
+        context['clients'] = Client.objects.distinct().count()
+        return context
 
 
 class MailingCreateView(LoginRequiredMixin, CreateView):
@@ -50,15 +84,11 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_object(self, queryset=None):
         mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
+        if is_manager(self.request.user) and mailing.owner != self.request.user:
+             raise PermissionDenied("Менеджеры не могут редактировать чужие рассылки.")
         if not is_manager(self.request.user) and mailing.owner != self.request.user:
             raise PermissionDenied("Вы не можете редактировать эту рассылку.")
         return mailing
-
-    def dispatch(self, request, *args, **kwargs):
-        mailing = self.get_object()
-        if is_manager(request.user) and mailing.owner != request.user:
-             raise PermissionDenied("Менеджеры не могут редактировать чужие рассылки.")
-        return super().dispatch(request, *args, **kwargs)
 
 
 class MailingDeleteView(LoginRequiredMixin, DeleteView):
@@ -66,17 +96,13 @@ class MailingDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'mailing/mailing_confirm_delete.html'
     success_url = reverse_lazy('mailing:mailing_list')
 
-   def get_object(self, queryset=None):
+    def get_object(self, queryset=None):
         mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
+        if is_manager(self.request.user) and mailing.owner != self.request.user:
+            raise PermissionDenied("Менеджеры не могут удалять чужие рассылки.")
         if not is_manager(self.request.user) and mailing.owner != self.request.user:
             raise PermissionDenied("Вы не можете удалять эту рассылку.")
         return mailing
-
-    def dispatch(self, request, *args, **kwargs):
-        mailing = self.get_object()
-        if is_manager(request.user) and mailing.owner != request.user:
-             raise PermissionDenied("Менеджеры не могут удалять чужие рассылки.")
-        return super().dispatch(request, *args, **kwargs)
 
 class MailingDetailView(LoginRequiredMixin, DetailView):
     model = Mailing
@@ -85,22 +111,18 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
 
     def get_object(self, queryset=None):
         mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
+        if not is_manager(self.request.user) and mailing.owner != self.request.user:
+            raise PermissionDenied("Вы не можете просматривать детали этой рассылки.")
         return mailing
 
-    def dispatch(self, request, *args, **kwargs):
-        mailing = self.get_object()
-        return super().dispatch(request, *args, **kwargs)
 
 class MailingDeactivateView(LoginRequiredMixin, View):
     def get(self, request, pk):
-        mailing = get_object_or_404(Mailing, pk=pk)
         if not is_manager(request.user):
             raise PermissionDenied("Только менеджеры могут деактивировать рассылки.")
+
+        mailing = get_object_or_404(Mailing, pk=pk)
         mailing.is_active = False
         mailing.save()
-        return redirect('mailing:mailing_list')
-
-
-
-
+        return redirect(reverse_lazy('mailing:mailing_list'))
 

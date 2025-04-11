@@ -1,35 +1,74 @@
-from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
-from django.views.generic.edit import CreateView
-from .forms import RegisterForm
+import secrets
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import Http404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse_lazy, reverse
+from django.views import View
+from django.views.generic import ListView, CreateView
 from django.core.mail import send_mail
-from django.conf import settings
+from config.settings import EMAIL_HOST_USER
+from .forms import RegisterForm
 from .models import User
-from django.contrib import messages
+
 
 class RegisterView(CreateView):
     model = User
     template_name = 'registration/register.html'
     form_class = RegisterForm
-    success_url = reverse_lazy('mailing:mailing_list')
+    success_url = reverse_lazy('users:login')
 
     def form_valid(self, form):
         user = form.save()
-        self.send_welcome_email(user.email)
-        messages.success(self.request, 'Вы успешно зарегистрированы.  Проверьте свою почту.')
+        token = secrets.token_hex(32)
+        user.token = token
+        user.is_active = False
+        user.save()
+        host = self.request.get_host()
+        url = f"http://{host}/users/email-confirm/{token}/"
+        send_mail(
+            subject='Подтверждение регистрации',
+            message=f'Перейдите по ссылке для подтверждения почты {url}',
+            from_email=EMAIL_HOST_USER,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
         return super().form_valid(form)
 
-    def send_welcome_email(self, email):
-        subject = 'Добро пожаловать!'
-        message = 'Спасибо за регистрацию на нашем сайте.'
-        from_email = settings.EMAIL_HOST_USER
-        try:
-            send_mail(subject, message, from_email, [email])
-        except Exception as e:
-            self.handle_email_error(e)
-            messages.error(self.request, 'Произошла ошибка при отправке приветственного письма.  Попробуйте позже.')
+
+class EmailConfirmView(View):
+    def get(self, request, token):
+        user = get_object_or_404(User, token=token)
+        user.is_active = True
+        user.token = ''
+        user.save()
+        return redirect(reverse('users:login'))
 
 
-    def handle_email_error(self, error):
-        print(f"Ошибка при отправке email: {error}")
+class UserListView(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'users/user_list.html'
 
+    def get_queryset(self):
+        if not self.request.user.is_staff:
+            raise Http404()
+        return User.objects.all()
+
+
+class UserBlockView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        user = get_object_or_404(User, id=pk)
+        if not request.user.is_staff:
+            raise Http404('Вы не обладаете нужными правами')
+        user.is_active = False
+        user.save()
+        return redirect(reverse('users:user_list'))
+
+
+class UserUnblockView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        user = get_object_or_404(User, id=pk)
+        if not request.user.is_staff:
+            raise Http404('Вы не обладаете нужными правами')
+        user.is_active = True
+        user.save()
+        return redirect(reverse('users:user_list'))

@@ -1,14 +1,13 @@
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import HttpResponseRedirect, HttpResponseForbidden
-from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework.generics import get_object_or_404
 from rest_framework.reverse import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from urllib3 import request
+from django.shortcuts import render
+
 
 from .forms import ClientForm
 from .models import Client
@@ -18,11 +17,15 @@ def is_manager(user):
     return user.groups.filter(name='Managers').exists()
 
 
+def home(request):
+    return render(request, 'clients/home.html')
+
+
 class AddClientView(LoginRequiredMixin, CreateView):
     model = Client
     form_class = ClientForm
-    template_name = 'clients/add_client.html'
-    success_url = reverse_lazy('clients:clients')
+    template_name = 'clients/client_create.html'
+    success_url = reverse_lazy('clients:client_list')
 
     def form_valid(self, form):
         """Присваиваем авторизованного пользователя создаваемому клиенту"""
@@ -62,43 +65,31 @@ class ListClientsView(LoginRequiredMixin, ListView):
 class ClientUpdateView(LoginRequiredMixin, UpdateView):
     model = Client
     form_class = ClientForm
-    template_name = 'clients/client_form.html'
-    success_url = reverse_lazy('clients:clients')
+    template_name = 'clients/client_update.html'
+    success_url = reverse_lazy('clients:clients_list')
     context_object_name = 'client'
 
     def get_object(self, queryset=None):
         client = get_object_or_404(Client, pk=self.kwargs.get('pk'))
+        if is_manager(self.request.user) and client.owner != self.request.user:
+            raise PermissionDenied('Менеджеры не имеют прав на редактирование чужих получателей')
         if not is_manager(self.request.user) and client.owner != self.request.user:
-            raise PermissionDenied('Отсутствуют права на редактирование этого получателя')
+            raise PermissionDenied('У вас нет прав на редактирование этого получателя')
         return client
-
-    def dispatch(self, request, *args, **kwargs):
-        client = self.get_object()
-        if is_manager(request.user) and client.owner != request.user:
-            return HttpResponseRedirect('Менеджеры не имеют прав на редактирование чужих пользователей')
-        return super().dispatch(request, *args, **kwargs)
 
 
 class ClientDeleteView(LoginRequiredMixin, DeleteView):
     model = Client
-    template_name = 'clients/client_confirm_delete.html'
-    success_url = reverse_lazy('clients:clients')
+    template_name = 'clients/client_delete.html'
+    success_url = reverse_lazy('clients:clients_list')
 
     def get_object(self, queryset=None):
         client = get_object_or_404(Client, pk=self.kwargs.get('pk'))
         if not is_manager(self.request.user) and client.owner != self.request.user:
             raise PermissionDenied('У вас нет прав на удаление этого получателя')
+        if is_manager(self.request.user) and client.owner != self.request.user:
+            raise PermissionDenied('Менеджеры не могут удалять чужих получателей')
         return client
-
-    def dispatch(self, request, *args, **kwargs):
-        client = self.get_object()
-        if is_manager(request.user) and client.owner != request.user:
-            return HttpResponseForbidden('Менеджеры не могут удалять чужих получателей')
-        return super().dispatch(request, *args, **kwargs)
-
-
-
-
 
 
 

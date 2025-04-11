@@ -29,11 +29,23 @@ class Mailing(models.Model):
     is_active = models.BooleanField(default=True, verbose_name='Активна')
 
 
-    def __str__(self):
-        return f'Рассылка: {self.message} | Статус: {self.get_status_display()}'
-
-
     class Meta:
         verbose_name = 'Рассылка'
         verbose_name_plural = 'Рассылки'
+        permissions = [
+            ("can_view_mailing", "Can view mailing")
+        ]
+
+
+    def get_successful_attempts_count(self):
+        return self.attempt.filter(status='successfully').count()
+
+    def get_unsuccessful_attempts_count(self):
+        return self.attempts.filter(status='not_unsuccessful').count()
+
+    def total_attempts_count(self):
+        return self.attempts.count()
+
+    def __str__(self):
+        return f'Рассылка: {self.message} | Статус: {self.get_status_display()}'
 

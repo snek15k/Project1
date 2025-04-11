@@ -17,16 +17,13 @@ def is_manager(user):
 class AddMessageView(LoginRequiredMixin, CreateView):
     model = Message
     form_class = MessageForm
-    template_name = 'mail_messages/add_message.html'
+    template_name = 'mail_messages/message_create.html'
     success_url = reverse_lazy('mail_messages:message_list')
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
         messages.success(self.request, 'Сообщение создано.')
         return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy('mail_messages:message_list')
 
 
 class MessageListView(LoginRequiredMixin, ListView):
@@ -48,38 +45,23 @@ class MessageListView(LoginRequiredMixin, ListView):
 class MessageUpdateView(LoginRequiredMixin, UpdateView):
     model = Message
     form_class = MessageForm
-    template_name = 'mail_messages/message_form.html'
+    template_name = 'mail_messages/message_update.html'
     success_url = reverse_lazy('mail_messages:message_list')
 
     def get_object(self, queryset=None):
         message = get_object_or_404(Message, pk=self.kwargs['pk'])
-        if not is_manager(self.request.user) and message.owner != self.request.user:
+        if message.owner != self.request.user:
             raise PermissionDenied("Вы не можете редактировать это сообщение.")
         return message
-
-    def dispatch(self, request, *args, **kwargs):
-        message = self.get_object()
-        if is_manager(request.user) and message.owner != request.user:
-            raise PermissionDenied("Менеджеры не могут редактировать чужие сообщения.")
-        return super().dispatch(request, *args, **kwargs)
 
 
 class MessageDeleteView(LoginRequiredMixin, DeleteView):
     model = Message
-    template_name = 'mail_messages/message_confirm_delete.html'
+    template_name = 'mail_messages/message_delete.html'
     success_url = reverse_lazy('mail_messages:message_list')
 
     def get_object(self, queryset=None):
         message = get_object_or_404(Message, pk=self.kwargs['pk'])
-        if not is_manager(self.request.user) and message.owner != self.request.user:
+        if message.owner != self.request.user:
             raise PermissionDenied("Вы не можете удалять это сообщение.")
         return message
-
-    def dispatch(self, request, *args, **kwargs):
-        message = self.get_object()
-        if is_manager(request.user) and message.owner != request.user:
-            raise PermissionDenied("Менеджеры не могут удалять чужие сообщения.")
-        return super().dispatch(request, *args, **kwargs)
-
-
-

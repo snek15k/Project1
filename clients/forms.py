@@ -1,8 +1,4 @@
 from django import forms
-from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.contrib.auth.models import PermissionsMixin
-
-
 from .models import Client
 
 class ClientForm(forms.ModelForm):
@@ -20,6 +16,7 @@ class ClientForm(forms.ModelForm):
     def clean_email(self):
         'Проверка уникальности email в рамках владельца'
         email = self.cleaned_data['email']
-        if Client.objects.filter(email=email, owner=self.instance.owner).exists():
+        owner = self.instance.owner if self.instance else self.inital.get('owner')
+        if Client.objects.filter(email=email, owner=owner).exists():
             raise forms.ValidationError('Этот email уже используется другим получателем')
         return email

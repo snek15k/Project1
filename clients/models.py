@@ -17,6 +17,6 @@ class Client(models.Model):
         verbose_name = 'Клиент'
         verbose_name_plural = 'Клиенты'
         ordering = ('email',)
-
-
-
+        permissions = [
+            ('can_view_client', 'Can view client'),
+                       ]

@@ -1,0 +1,13 @@
+{% extends 'clients/base.html' %}
+
+{% block title %}Добавить получателя{% endblock %}
+
+{% block content %}
+<h1>Добавить получателя</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Сохранить</button>
+</form>
+<a href="{% url 'clients:clients' %}" class="btn btn-secondary">Назад</a>
+{% endblock %}
