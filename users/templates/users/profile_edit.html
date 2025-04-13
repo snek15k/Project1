@@ -1,10 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'clients/base.html' %}
 
-</body>
-</html>
+{% block title %}Редактирование профиля{% endblock %}
+
+{% block content %}
+<h2>Редактирование профиля</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+</form>
+<a href="{% url 'users:profile' %}">Назад к профилю</a>
+{% endblock %}

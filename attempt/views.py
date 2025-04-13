@@ -7,6 +7,7 @@ def mailing_reports(request):
     user = request.user
     mailing_logs = MailingLog.objects.filter(mailing__created_by=user).order_by('-date_time')
     context = {
-        'mailing_logs': mailing_logs
+        'mailing_logs': mailing_logs,
+        'has_logs': mailing_logs.exists()
     }
     return render(request, 'attempt/mailing_reports.html', context)

@@ -33,20 +33,6 @@ def send_mailing(request):
     return render(request, 'mailing/send_mailing.html', {'form': form})
 
 
-class HomeView(TemplateView):
-    template_name = 'clients/home.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if is_manager(self.request.user):
-            context['mailings'] = Mailing.objects.all()
-        else:
-            context['mailings'] = Mailing.objects.filter(owner=self.request.user)
-        context['active_mailings'] = Mailing.objects.filter(is_active=True).count()
-        context['clients'] = Client.objects.distinct().count()
-        return context
-
-
 class MailingCreateView(LoginRequiredMixin, CreateView):
     model = Mailing
     form_class = MailingForm
@@ -76,6 +62,7 @@ class MailingListView(LoginRequiredMixin, ListView):
     def get_cache_key(self):
         return f"mailing_list_{self.request.user.id}"
 
+
 class MailingUpdateView(LoginRequiredMixin, UpdateView):
     model = Mailing
     form_class = MailingForm
@@ -103,6 +90,7 @@ class MailingDeleteView(LoginRequiredMixin, DeleteView):
         if not is_manager(self.request.user) and mailing.owner != self.request.user:
             raise PermissionDenied("Вы не можете удалять эту рассылку.")
         return mailing
+
 
 class MailingDetailView(LoginRequiredMixin, DetailView):
     model = Mailing

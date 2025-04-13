@@ -4,11 +4,11 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework.generics import get_object_or_404
 from rest_framework.reverse import reverse_lazy
-from django.views.generic import CreateView, ListView, UpdateView, DeleteView
+from django.views.generic import CreateView, ListView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 
-
+from mailings.models import Mailing
 from .forms import ClientForm
 from .models import Client
 
@@ -16,9 +16,23 @@ from .models import Client
 def is_manager(user):
     return user.groups.filter(name='Managers').exists()
 
+class HomeView(TemplateView):
+    template_name = 'clients/home.html'
 
-def home(request):
-    return render(request, 'clients/home.html')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            if is_manager(self.request.user):
+                context['count_mailings'] = Mailing.objects.count()
+                context['count_active_mailings'] = Mailing.objects.filter(is_active=True).count()
+                context['unique_contacts'] = Client.objects.distinct().count()
+            else:
+                context['count_mailings'] = Mailing.objects.filter(owner=self.request.user).count()
+                context['count_active_mailings'] = Mailing.objects.filter(owner=self.request.user, is_active=True).count()
+                context['unique_contacts'] = Client.objects.filter(owner=self.request.user).distinct().count()
+            return context
+        else:
+            return context
 
 
 class AddClientView(LoginRequiredMixin, CreateView):

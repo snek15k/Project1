@@ -4,22 +4,42 @@
 
 {% block content %}
 <h2>Список пользователей</h2>
-<ul class="list-group my-5">
-    {% for user in object_list %}
-        <li class="list-group-item">
-            {{ user.email }} -
-            {% if user.is_active %}
-                <form action="{% url 'users:block_users' user.pk %}" method="post" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Заблокировать</button>
-                </form>
-            {% else %}
-                <form action="{% url 'users:unlock_users' user.pk %}" method="post" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary">Разблокировать</button>
-                </form>
-            {% endif %}
-        </li>
-    {% endfor %}
-</ul>
+<table>
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Имя</th>
+            <th>Фамилия</th>
+            <th>Статус</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in object_list %}
+            <tr>
+                <td>{{ user.email }}</td>
+                <td>{{ user.first_name }}</td>
+                <td>{{ user.last_name }}</td>
+                <td>{{ user.is_active|yesno:"Активен,Заблокирован" }}</td>
+                <td>
+                    {% if user.is_active %}
+                        <form action="{% url 'users:user_block' user.pk %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Заблокировать</button>
+                        </form>
+                    {% else %}
+                        <form action="{% url 'users:user_unblock' user.pk %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Разблокировать</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="5">Нет пользователей.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

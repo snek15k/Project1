@@ -19,4 +19,4 @@ class Client(models.Model):
         ordering = ('email',)
         permissions = [
             ('can_view_client', 'Can view client'),
-                       ]
+        ]

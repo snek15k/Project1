@@ -1,10 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "clients/base.html" %}
 
-</body>
-</html>
+{% block content %}
+<h1>Отчеты о рассылках</h1>
+
+{% if has_logs %}
+<table>
+    <thead>
+        <tr>
+            <th>Рассылка</th>
+            <th>Клиент</th>
+            <th>Дата и время</th>
+            <th>Статус</th>
+            <th>Ответ сервера</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in mailing_logs %}
+        <tr>
+            <td>{{ log.mailing }}</td>
+            <td>{{ log.client }}</td>
+            <td>{{ log.date_time }}</td>
+            <td>{{ log.get_status_display }}</td>
+            <td>{{ log.server_response|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <p>Нет данных о попытках рассылок.</p>
+{% endif %}
+{% endblock %}

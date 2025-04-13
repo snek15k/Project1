@@ -1,10 +1,10 @@
-{% extends 'base.html' %}
+{% extends 'clients/base.html' %}
 
 {% block title %}Удалить получателя{% endblock %}
 
 {% block content %}
 <h1>Удалить клиента</h1>
-<p>Вы уверены, что хотите удалить получателя? {{ client.full_name }}?</p>
+<p>Вы уверены, что хотите удалить получателя? {{ client }}?</p>
 <form method="post">
     {% csrf_token %}
     <button type="submit" class="btn btn-danger">Удалить</button>

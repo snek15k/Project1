@@ -1,10 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'clients/base.html' %}
 
-</body>
-</html> для создания новой рассылки
+{% block content %}
+<h2>Создание новой рассылки</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Создать рассылку</button>
+</form>
+<a href="{% url 'mailing:mailing_list' %}">Назад к списку рассылок</a>
+{% endblock %}

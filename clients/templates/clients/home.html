@@ -3,15 +3,44 @@
 {% block title %}Главная{% endblock %}
 
 {% block content %}
-<ul class="list-group">
-        <li class="list-group-item">
-            Количество всех рассылок: {{ count_mailings }}
-        </li>
-    <li class="list-group-item">
-            Количество активных рассылок: {{ count_active_mailings }}
-        </li>
-    <li class="list-group-item">
-            Количество уникальных получателей: {{ unique_contacts }}
-        </li>
-</ul>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Статистика рассылок</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Количество всех рассылок:</strong> {{ mailings|length }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Количество активных рассылок:</strong> {{ active_mailings }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Количество уникальных клиентов:</strong> {{ clients }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Список рассылок</h5>
+                    <ul class="list-group list-group-flush">
+                        {% for mailing in mailings %}
+                            <li class="list-group-item">
+                                <a href="{% url 'mailings:mailing_detail' mailing.pk %}">{{ mailing.name }}</a>
+                                {#  Предполагается, что у вас есть URL для просмотра деталей рассылки  #}
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item">Нет рассылок.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,10 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'clients/base.html' %}
 
-</body>
-</html> для отображения детальной информации о рассылке
+{% block content %}
+<h2>Детали рассылки: "{{ mailing.name }}"</h2>
+<p><strong>Сообщение:</strong> {{ mailing.message }}</p>
+<p><strong>Статус:</strong> {{ mailing.get_status_display }}</p>
+<p><strong>Дата и время первой отправки:</strong> {{ mailing.start_date_time }}</p>
+<p><strong>Дата и время окончания отправки:</strong> {{ mailing.end_date_time }}</p>
+<p><strong>Клиенты:</strong></p>
+<ul>
+    {% for client in mailing.clients.all %}
+        <li>{{ client.full_name }} ({{ client.email }})</li>
+    {% empty %}
+        <li>Нет клиентов.</li>
+    {% endfor %}
+</ul>
+<a href="{% url 'mailing:mailing_update' mailing.pk %}">Редактировать</a>
+<a href="{% url 'mailing:mailing_delete' mailing.pk %}">Удалить</a>
+<a href="{% url 'mailing:mailing_list' %}">Назад к списку рассылок</a>
+{% endblock %}
