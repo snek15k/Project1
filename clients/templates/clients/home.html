@@ -32,7 +32,6 @@
                         {% for mailing in mailings %}
                             <li class="list-group-item">
                                 <a href="{% url 'mailings:mailing_detail' mailing.pk %}">{{ mailing.name }}</a>
-                                {#  Предполагается, что у вас есть URL для просмотра деталей рассылки  #}
                             </li>
                         {% empty %}
                             <li class="list-group-item">Нет рассылок.</li>

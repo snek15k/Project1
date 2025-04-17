@@ -2,7 +2,7 @@
 
 {% block content %}
 <h2>Список рассылок</h2>
-<a href="{% url 'mailing:mailing_create' %}">Создать новую рассылку</a>
+<a href="{% url 'mailings:mailing_create' %}">Создать новую рассылку</a>
 <table>
     <thead>
         <tr>
@@ -17,9 +17,9 @@
                 <td>{{ mailing.name }}</td>
                 <td>{{ mailing.get_status_display }}</td>
                 <td>
-                    <a href="{% url 'mailing:mailing_detail' mailing.pk %}">Просмотреть</a>
-                    <a href="{% url 'mailing:mailing_update' mailing.pk %}">Редактировать</a>
-                    <a href="{% url 'mailing:mailing_delete' mailing.pk %}">Удалить</a>
+                    <a href="{% url 'mailings:mailing_detail' mailing.pk %}">Просмотреть</a>
+                    <a href="{% url 'mailings:mailing_update' mailing.pk %}">Редактировать</a>
+                    <a href="{% url 'mailings:mailing_delete' mailing.pk %}">Удалить</a>
                 </td>
             </tr>
         {% empty %}

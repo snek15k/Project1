@@ -1,9 +1,7 @@
 import os
 from pathlib import Path
 
-
-
-from django.conf.global_settings import LOGIN_REDIRECT_URL
+from django.conf.global_settings import LOGIN_REDIRECT_URL, LOGIN_URL
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -57,13 +55,13 @@ AUTH_USER_MODEL = 'users.User'
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
 
-SERVER_EMAIL = os.getenv('SERVER_EMAIL')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+SERVER_EMAIL =  EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 MANAGERS_GROUP = 'Менеджеры'
 
 LOGIN_REDIRECT_URL = 'clients:index'
@@ -74,7 +72,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -149,5 +147,15 @@ ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 
-LOGIN_REDIRECT_URL = '/profile/'
-ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'clients:home'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'clients:home'
+LOGIN_URL = 'users:login'
+
+CACHE_ENABLE = True
+if CACHE_ENABLE:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': os.getenv('LOCATION'),
+        }
+    }

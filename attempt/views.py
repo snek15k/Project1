@@ -5,7 +5,7 @@ from .models import MailingLog
 @login_required
 def mailing_reports(request):
     user = request.user
-    mailing_logs = MailingLog.objects.filter(mailing__created_by=user).order_by('-date_time')
+    mailing_logs = MailingLog.objects.filter(mailing__owner=user).order_by('-date_time')
     context = {
         'mailing_logs': mailing_logs,
         'has_logs': mailing_logs.exists()

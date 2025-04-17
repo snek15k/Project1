@@ -25,7 +25,7 @@ class HomeView(TemplateView):
             if is_manager(self.request.user):
                 context['count_mailings'] = Mailing.objects.count()
                 context['count_active_mailings'] = Mailing.objects.filter(is_active=True).count()
-                context['unique_contacts'] = Client.objects.distinct().count()
+                context['unique_contacts'] = Client.objects.values('email').distinct().count()
             else:
                 context['count_mailings'] = Mailing.objects.filter(owner=self.request.user).count()
                 context['count_active_mailings'] = Mailing.objects.filter(owner=self.request.user, is_active=True).count()
@@ -71,9 +71,6 @@ class ListClientsView(LoginRequiredMixin, ListView):
     @method_decorator(cache_page(60 * 5, key_prefix='client_list'))
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
-
-    def get_cache_key(self):
-        return f'{self.request.user.id}_clients_list'
 
 
 class ClientUpdateView(LoginRequiredMixin, UpdateView):

@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import cache_page
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
+from pyexpat.errors import messages
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth.mixins import LoginRequiredMixin
 
@@ -71,9 +72,7 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_object(self, queryset=None):
         mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
-        if is_manager(self.request.user) and mailing.owner != self.request.user:
-             raise PermissionDenied("Менеджеры не могут редактировать чужие рассылки.")
-        if not is_manager(self.request.user) and mailing.owner != self.request.user:
+        if mailing.owner != self.request.user and not is_manager(self.request.user):
             raise PermissionDenied("Вы не можете редактировать эту рассылку.")
         return mailing
 
@@ -85,9 +84,7 @@ class MailingDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_object(self, queryset=None):
         mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
-        if is_manager(self.request.user) and mailing.owner != self.request.user:
-            raise PermissionDenied("Менеджеры не могут удалять чужие рассылки.")
-        if not is_manager(self.request.user) and mailing.owner != self.request.user:
+        if mailing.owner != self.request.user and not is_manager(self.request.user):
             raise PermissionDenied("Вы не можете удалять эту рассылку.")
         return mailing
 
@@ -110,7 +107,15 @@ class MailingDeactivateView(LoginRequiredMixin, View):
             raise PermissionDenied("Только менеджеры могут деактивировать рассылки.")
 
         mailing = get_object_or_404(Mailing, pk=pk)
+        return render(request, 'mailing/mailing_deactivate_mailing.html', {'mailing': mailing})
+
+    def post(self, request, pk):
+        if not is_manager(request.user):
+            raise PermissionDenied("Только менеджеры могут деактивировать рассылки")
+
+        mailing = get_object_or_404(Mailing, pk=pk)
         mailing.is_active = False
         mailing.save()
-        return redirect(reverse_lazy('mailing:mailing_list'))
+        messages.success(request, f"Рассылка '{mailing.name}' успешно деактивирована")
+        return redirect('mailing:mailing_list')
 
