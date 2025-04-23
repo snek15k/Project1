@@ -1,9 +1,17 @@
+import secrets
+
+import form
 from django import forms
 from django.core.mail import send_mail
+from django.shortcuts import get_object_or_404
 from django.template import loader
 from django.conf import settings
 from .models import User
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.contrib.auth.tokens import default_token_generator
 
 
 class RegisterForm(forms.ModelForm):
@@ -11,48 +19,47 @@ class RegisterForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name')
+        fields = ('email', 'first_name', 'last_name')
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password"])
+        user.is_active = False
+        user.verify_code = user.generate_verify_code()
         if commit:
             user.save()
         return user
 
 
 class CustomPasswordResetForm(PasswordResetForm):
-    def send_mail(self, subject_template_name, email_template_name, context, from_email=None, recipient_list=None, fail_silently=False, html_email_template_name=None,
-                  extra_email_context=None):
-        if extra_email_context:
-            context.update(extra_email_context)
+    def send_mail(self, request, recipient_email, subject_template_name, email_template_name, from_email=None, html_email_template_name=None):
 
-        subject = loader.render_to_string(subject_template_name, context)
+        user = get_object_or_404(User, email=recipient_email)
+        verify_code = user.generate_verify_code()
+        user.save()
+
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        context = {
+            'email': recipient_email,
+            'domain': request.get_host(),
+            'site_name': 'Your Site',
+            'uidb64': uidb64,
+            'token': token,
+            'verify_code': verify_code,
+            'protocol': 'http',
+        }
+
+        subject = render_to_string(subject_template_name, context)
         subject = ''.join(subject.splitlines())
-        body = loader.render_to_string(email_template_name, context)
-        html_message = loader.render_to_string(html_email_template_name, context) if html_email_template_name else None
+        text_content = render_to_string(email_template_name, context)
 
-        send_mail(subject, body, from_email, recipient_list, fail_silently=fail_silently, html_message=html_message)
+        if html_email_template_name:
+            html_content = render_to_string(html_email_template_name, context)
+        else:
+            html_content = None
 
-    def save(self, domain_override=None,
-             use_https=False,
-             token_generator=None,
-             from_email=None,
-             request=None,
-             email_template_name = None,
-             subject_template_name = None,
-             html_email_template_name=None,
-             extra_email_context=None):
-
-        return super().save(domain_override=domain_override,
-                            use_https=use_https,
-                            token_generator=token_generator,
-                            from_email=from_email,
-                            request=request,
-                            email_template_name=email_template_name,
-                            subject_template_name=subject_template_name,
-                            html_email_template_name=html_email_template_name,
-                            extra_email_context=extra_email_context)
+        send_mail(subject, text_content, from_email or settings.DEFAULT_FROM_EMAIL, [recipient_email], html_message=html_content)
 
 
 class CustomSetPasswordForm(SetPasswordForm):
@@ -71,3 +78,18 @@ class CustomSetPasswordForm(SetPasswordForm):
     class Meta:
         model = User
         fields = ('new_password1', 'new_password2')
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("new_password1")
+        confirm_password = cleaned_data.get("new_password2")
+
+        if password != confirm_password:
+            raise forms.ValidationError(
+                "Пароли не совпадают"
+            )
+    def save(self, commit=True, user=None):
+        if user:
+            user.set_password(self.cleaned_data["new_password1"])
+            if commit:
+                user.save()
+        return user

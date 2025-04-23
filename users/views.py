@@ -1,5 +1,6 @@
 import secrets
 
+from allauth.account.signals import password_reset
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin,PermissionRequiredMixin
@@ -27,12 +28,16 @@ class CustomPasswordResetView(PasswordResetView):
     subject_template_name = 'users/registration/password_reset_subject.txt'
     success_url = reverse_lazy('users:password_reset_done')
 
+    def get_success_url(self):
+        return reverse('users:password_reset_done')
+
     def form_valid(self, form):
-        form.save(
-            use_https=self.request.is_secure(),
-            token_generator=self.token_generator,
+        form.send_mail(
+            self.request,
+            form.cleaned_data['email'],
+            subject_template_name=self.subject_template_name,
+            email_template_name=self.email_template_name,
             from_email=settings.EMAIL_HOST_USER,
-            request=self.request,
         )
         return super().form_valid(form)
 
@@ -41,6 +46,20 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     form_class = CustomSetPasswordForm
     template_name = 'users/registration/password_reset_confirm.html'
     success_url = reverse_lazy('users:password_reset_complete')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.verify_code = kwargs.get('verify_code')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['verify_code'] = self.verify_code
+        return context
+
+    def form_valid(self, form):
+        user = get_object_or_404(User, verify_code=self.verify_code)
+        form.save(user=user)
+        return super().form_valid(form)
 
 
 class RegisterView(CreateView):
@@ -51,15 +70,16 @@ class RegisterView(CreateView):
 
     def form_valid(self, form):
         user = form.save()
-        token = secrets.token_hex(32)
-        user.token = token
+        verify_code = user.generate_verify_code()
         user.is_active = False
         user.save()
-        host = self.request.get_host()
-        url = f"https://{host}/users/email-confirm/{token}/"
+        current_site = self.request.get_host()
+        verification_url = reverse('users:email_confirm', kwargs={'token': verify_code})
+        abs_verification_url = f"http://{current_site}{verification_url}"
+
         send_mail(
             subject='Подтверждение регистрации',
-            message=f'Перейдите по ссылке для подтверждения почты {url}',
+            message=f'Перейдите по ссылке для подтверждения почты: {abs_verification_url}',
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[user.email],
             fail_silently=False,
