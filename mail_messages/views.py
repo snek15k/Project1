@@ -22,6 +22,7 @@ class AddMessageView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
+        self.object = form.save()
         messages.success(self.request, 'Сообщение создано.')
         return super().form_valid(form)
 
@@ -65,3 +66,10 @@ class MessageDeleteView(LoginRequiredMixin, DeleteView):
         if message.owner != self.request.user:
             raise PermissionDenied("Вы не можете удалять это сообщение.")
         return message
+
+
+class MessageDetailView(DetailView):
+    model = Message
+    template_name = 'mail_messages/message_detail.html'
+    context_object_name = 'message'
+

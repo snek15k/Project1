@@ -12,11 +12,19 @@ class ClientForm(forms.ModelForm):
             'comment': 'Введите дополнительную информацию о получателе'
         }
 
+    def clean(self):
+        cleaned_data = super(ClientForm, self).clean()
+        email = cleaned_data.get('email')
+        full_name = cleaned_data.get('full_name')
 
-    def clean_email(self):
-        'Проверка уникальности email в рамках владельца'
-        email = self.cleaned_data['email']
-        owner = self.instance.owner if self.instance else self.inital.get('owner')
-        if Client.objects.filter(email=email, owner=owner).exists():
-            raise forms.ValidationError('Этот email уже используется другим получателем')
-        return email
+        if not email:
+            raise forms.ValidationError('Поле Email обязательно для заполнения')
+        if not full_name:
+            raise forms.ValidationError('Поле ФИО обязательно для заполнения')
+
+        if email:
+            owner = self.instance.owner if self.instance.pk else None
+            if owner is not None and Client.objects.filter(email=email, owner=owner).exists():
+                raise forms.ValidationError('Этот email уже используется другим получателем')
+
+        return cleaned_data

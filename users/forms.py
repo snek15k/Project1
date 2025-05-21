@@ -40,9 +40,11 @@ class CustomPasswordResetForm(PasswordResetForm):
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
+        host = request.get_host()
+
         context = {
             'email': recipient_email,
-            'domain': request.get_host(),
+            'domain': host,
             'site_name': 'Your Site',
             'uidb64': uidb64,
             'token': token,

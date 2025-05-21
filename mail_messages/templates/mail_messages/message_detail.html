@@ -1,20 +1,22 @@
 {% extends "clients/base.html" %}
 
 {% block content %}
-<div class="container">
+  <div class="container">
     <h1>{{ message.message_subject }}</h1>
     <p><strong>Автор:</strong> {{ message.owner.username }}</p>
     <div class="message-body">
-        <p>{{ message.message_body }}</p>
+      <p>{{ message.message_body }}</p>
     </div>
-    
+
     <div class="actions">
-        <a href="{% url 'message_update' message.id %}" class="btn btn-primary">Редактировать</a>
-        <form action="{% url 'message_delete' message.id %}" method="post" style="display:inline;">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger">Удалить</button>
+      {% if message.owner == request.user %}
+        <a href="{% url 'mail_messages:message_update' message.pk %}" class="btn btn-primary">Редактировать</a>
+        <form action="{% url 'mail_messages:message_delete' message.pk %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Удалить</button>
         </form>
-        <a href="{% url 'message_list' %}" class="btn btn-secondary">Назад к списку сообщений</a>
+      {% endif %}
+      <a href="{% url 'mail_messages:message_list' %}" class="btn btn-secondary">Назад к списку сообщений</a>
     </div>
-</div>
+  </div>
 {% endblock %}

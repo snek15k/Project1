@@ -1,6 +1,6 @@
 {% extends 'clients/base.html' %}
 
-{% block title %}Список получателей{% endblock %}
+{% block title %}Список сообщений{% endblock %}
 
 {% block content %}
 <h2>Список сообщений</h2>
@@ -8,8 +8,10 @@
 <ul class="list-group my-5">
     {% for message in object_list %}
         <li class="list-group-item">
-            <a href="{% url 'mailings:message_detail' message.pk %}">{{ message.subject }}</a>
+            <a href="{% url 'mail_messages:message_detail' message.pk %}">{{ message.message_subject }}</a>
         </li>
+    {% empty %}
+        <li class="list-group-item">Нет сообщений.</li>
     {% endfor %}
 </ul>
 {% endblock %}

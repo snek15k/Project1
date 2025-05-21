@@ -1,5 +1,4 @@
 from django.core.exceptions import PermissionDenied
-from django.core.paginator import Paginator
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework.generics import get_object_or_404
@@ -7,6 +6,9 @@ from rest_framework.reverse import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user
+
 
 from mailings.models import Mailing
 from .forms import ClientForm
@@ -16,6 +18,7 @@ from .models import Client
 def is_manager(user):
     return user.groups.filter(name='Managers').exists()
 
+
 class HomeView(TemplateView):
     template_name = 'clients/home.html'
 
@@ -23,16 +26,36 @@ class HomeView(TemplateView):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
             if is_manager(self.request.user):
-                context['count_mailings'] = Mailing.objects.count()
-                context['count_active_mailings'] = Mailing.objects.filter(is_active=True).count()
-                context['unique_contacts'] = Client.objects.values('email').distinct().count()
+                context['count_mailings'] = self.get_total_mailings()
+                context['count_active_mailings'] = self.get_active_mailings()
+                context['unique_contacts'] = self.get_unique_contacts()
             else:
-                context['count_mailings'] = Mailing.objects.filter(owner=self.request.user).count()
-                context['count_active_mailings'] = Mailing.objects.filter(owner=self.request.user, is_active=True).count()
-                context['unique_contacts'] = Client.objects.filter(owner=self.request.user).distinct().count()
-            return context
+                context['count_mailings'] = self.get_user_total_mailings()
+                context['count_active_mailings'] = self.get_user_active_mailings()
+                context['unique_contacts'] = self.get_user_unique_contacts()
         else:
-            return context
+            context['count_mailings'] = 0
+            context['count_active_mailings'] = 0
+            context['unique_contacts'] = 0
+        return context
+
+    def get_total_mailings(self):
+        return Mailing.objects.count()
+
+    def get_active_mailings(self):
+        return Mailing.objects.filter(is_active=True).count()
+
+    def get_unique_contacts(self):
+        return Client.objects.values('email').distinct().count()
+
+    def get_user_total_mailings(self):
+        return Mailing.objects.filter(owner=self.request.user).count()
+
+    def get_user_active_mailings(self):
+        return Mailing.objects.filter(owner=self.request.user, is_active=True).count()
+
+    def get_user_unique_contacts(self):
+        return Client.objects.filter(owner=self.request.user).values('email').distinct().count()
 
 
 class AddClientView(LoginRequiredMixin, CreateView):
@@ -43,7 +66,9 @@ class AddClientView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         """Присваиваем авторизованного пользователя создаваемому клиенту"""
-        form.instance.owner = self.request.user
+        user = get_user(self.request)
+        form.instance.owner = user
+        form.instance.save()
         return super().form_valid(form)
 
 
@@ -61,11 +86,7 @@ class ListClientsView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        queryset = self.get_queryset()
-        paginator = Paginator(queryset, self.paginate_by)
-        page_number = self.request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        context['clients'] = page_obj
+        context['clients'] = self.get_queryset()
         return context
 
     @method_decorator(cache_page(60 * 5, key_prefix='client_list'))
@@ -77,16 +98,22 @@ class ClientUpdateView(LoginRequiredMixin, UpdateView):
     model = Client
     form_class = ClientForm
     template_name = 'clients/client_update.html'
-    success_url = reverse_lazy('clients:clients_list')
+    success_url = reverse_lazy('clients:client_list')
     context_object_name = 'client'
 
     def get_object(self, queryset=None):
         client = get_object_or_404(Client, pk=self.kwargs.get('pk'))
+        if client.owner is None:
+            raise PermissionDenied('У этого получателя не установлен владелец.')
         if is_manager(self.request.user) and client.owner != self.request.user:
             raise PermissionDenied('Менеджеры не имеют прав на редактирование чужих получателей')
         if not is_manager(self.request.user) and client.owner != self.request.user:
             raise PermissionDenied('У вас нет прав на редактирование этого получателя')
         return client
+
+    def form_valid(self, form):
+        form.instance.save()
+        return super().form_valid(form)
 
 
 class ClientDeleteView(LoginRequiredMixin, DeleteView):
@@ -101,8 +128,3 @@ class ClientDeleteView(LoginRequiredMixin, DeleteView):
         if is_manager(self.request.user) and client.owner != self.request.user:
             raise PermissionDenied('Менеджеры не могут удалять чужих получателей')
         return client
-
-
-
-
-
