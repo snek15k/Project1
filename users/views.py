@@ -1,144 +1,135 @@
-import secrets
-
-from allauth.account.signals import password_reset
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin,PermissionRequiredMixin
-from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, LoginView
-from django.http import Http404
-from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse_lazy, reverse
-from django.views import View
-from django.views.generic import ListView, CreateView
+from functools import reduce
 from django.core.mail import send_mail
-from config.settings import EMAIL_HOST_USER
-from .forms import RegisterForm, CustomSetPasswordForm, CustomPasswordResetForm
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import (
+    CreateView, FormView, UpdateView,
+    DetailView, TemplateView
+)
+from django.contrib.auth.views import (
+    PasswordResetConfirmView,
+    LogoutView,
+)
+from django.contrib import messages
+from .forms import (
+    RegisterForm, LoginForm, ProfileEditForm,
+    CustomPasswordResetForm, CustomSetPasswordForm
+)
 from .models import User
-from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.views.generic import UpdateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import views as auth_views
 
 
-User = get_user_model()
-
-
-class CustomPasswordResetView(PasswordResetView):
-    form_class = CustomPasswordResetForm
-    template_name = 'users/registration/password_reset.html'
-    email_template_name = 'users/registration/password_reset_email.html'
-    subject_template_name = 'users/registration/password_reset_subject.txt'
-    success_url = reverse_lazy('users:password_reset_done')
-
-    def get_success_url(self):
-        return reverse('users:password_reset_done')
+class RegisterView(CreateView):
+    "Регистрация пользователя, отправка письма с токеном подверждения регистрации"
+    form_class = RegisterForm
+    template_name = 'users/registration/register.html'
+    success_url = reverse_lazy('users:login')
 
     def form_valid(self, form):
-        form.send_mail(
-            self.request,
-            form.cleaned_data['email'],
-            subject_template_name=self.subject_template_name,
-            email_template_name=self.email_template_name,
-            from_email=settings.EMAIL_HOST_USER,
+        user = form.save(commit=False)
+        token = user.generate_verification_token()
+        user.is_active = False
+        user.save()
+
+        verification_link = f"{settings.DOMAIN}/verify/{token}/"
+        send_mail(
+            "Подтверждение регистрации в сервисе рассылок",
+            f"Перейдите по ссылке для подтверждения: {verification_link}",
+            settings.EMAIL_HOST_USER,
+            [user.email],
+            fail_silently=False,
         )
+
+        messages.success(self.request, 'Письмо с подтверждением отправлено на вашу электронную почту')
+        return super().form_valid(form)
+
+
+class LoginView(FormView):
+    "Аутентификация пользователя"
+    form_class = LoginForm
+    template_name = 'users/registration/login.html'
+    success_url = reverse_lazy('profile')
+
+    def form_valid(self, form):
+        user = form.get_user()
+        if not user.is_verified:
+            messages.error(self.request, 'Подтвердите ваш адрес электронной почты')
+            return redirect('login')
+        return super().form_valid(form)
+
+
+class LogoutView(LogoutView):
+    "Выход из системы"
+    next_page = reverse_lazy('login')
+
+
+class ProfileView(LoginRequiredMixin, DetailView):
+    "Просмотр профиля пользователя"
+    model = User
+    template_name = 'users/registration/profile.html'
+    context_object_name = 'profile_user'
+
+    def get_object(self):
+        return self.request.user
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['can_edit'] = True
+        return context
+
+
+class ProfileEditView(LoginRequiredMixin, UpdateView):
+    "Редактирование профиля пользователя"
+    form_class = ProfileEditForm
+    template_name = 'users/registration/profile_edit.html'
+    success_url = reverse_lazy('users:profile')
+
+    def get_object(self):
+        return self.request.user
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Профиль успешно обновлен')
+        return super().form_valid(form)
+
+
+class VerifyEmailView(TemplateView):
+    """Подтверждение email по токену"""
+    template_name = 'users/registration/verify_email.html'
+
+    def get(self, request, token):
+        try:
+            user = User.objects.get(verification_token=token)
+            user.is_active = True
+            user.verification_token = ''
+            user.save()
+            messages.success(request, 'Ваша электронная почта успешно подтверждена.')
+            return redirect('users:login')
+        except User.DoesNotExist:
+            messages.error(request, 'Недействительная ссылка подтверждения.')
+            return redirect('users:register')
+
+
+class CustomPasswordResetView(auth_views.PasswordResetView):
+    template_name = 'users/registration/password_reset.html'
+    email_template_name = 'users/registration/password_reset_email.html'
+    success_url = reverse_lazy('users:password_reset_done')
+    form_class = CustomPasswordResetForm
+
+    def form_valid(self, form):
         return super().form_valid(form)
 
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    "Установка нового пароля, сброс старого"
     form_class = CustomSetPasswordForm
     template_name = 'users/registration/password_reset_confirm.html'
-    success_url = reverse_lazy('users:password_reset_complete')
-
-    def dispatch(self, request, *args, **kwargs):
-        self.verify_code = kwargs.get('verify_code')
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['verify_code'] = self.verify_code
-        return context
+    success_url = reverse_lazy('login')
 
     def form_valid(self, form):
-        user = get_object_or_404(User, verify_code=self.verify_code)
-        form.save(user=user)
-        return super().form_valid(form)
-
-
-class RegisterView(CreateView):
-    model = User
-    template_name = 'registration/register.html'
-    form_class = RegisterForm
-    success_url = reverse_lazy('users:login')
-
-    def form_valid(self, form):
-        user = form.save()
-        verify_code = user.generate_verify_code()
-        user.is_active = False
-        user.save()
-        current_site = self.request.get_host()
-        verification_url = reverse('users:email_confirm', kwargs={'token': verify_code})
-        abs_verification_url = f"http://{current_site}{verification_url}"
-
-        send_mail(
-            subject='Подтверждение регистрации',
-            message=f'Перейдите по ссылке для подтверждения почты: {abs_verification_url}',
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-        return super().form_valid(form)
-
-
-class EmailConfirmView(View):
-    def get(self, request, token):
-        user = get_object_or_404(User, token=token)
-        user.is_active = True
-        user.token = ''
-        user.save()
-        messages.success(request, 'Ваша учетная запись успешно активирована! Пожалуйста, войдите.')
-        return redirect(reverse('users:login'))
-
-
-class UserListView(LoginRequiredMixin, ListView):
-    model = User
-    template_name = 'users/user_list.html'
-
-    def get_queryset(self):
-        if not self.request.user.is_staff:
-            raise Http404()
-        return User.objects.all()
-
-
-class UserBlockView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = ('users:block_user',)
-
-    def get(self, request, pk):
-        user = get_object_or_404(User, id=pk)
-        if not request.user.is_staff:
-            raise Http404('Вы не обладаете нужными правами')
-        user.is_active = False
-        user.save()
-        return redirect(reverse('users:user_list'))
-
-
-class UserUnblockView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = ('users:unblock_user',)
-
-    def get(self, request, pk):
-        user = get_object_or_404(User, id=pk)
-        if not request.user.is_staff:
-            raise Http404('Вы не обладаете нужными правами')
-        user.is_active = True
-        user.save()
-        return redirect(reverse('users:user_list'))
-
-
-@login_required
-def profile_view(request):
-    return render(request, 'users/profile.html')
-
-
-class LoginView(LoginView):
-    template_name = 'registration/login.html'
-
-
-class LogoutView(View):
-    next_page = reverse_lazy('clients:home')
+        response = super().form_valid(form)
+        messages.success(self.request, 'Пароль успешно изменён')
+        return response

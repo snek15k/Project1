@@ -64,8 +64,10 @@ SERVER_EMAIL =  EMAIL_HOST_USER
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 MANAGERS_GROUP = 'Менеджеры'
 
-LOGIN_REDIRECT_URL = 'clients:index'
-LOGIN_URL = 'users:login'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'profile'
+LOGOUT_REDIRECT_URL = 'login'
+DOMAIN = os.getenv('DOMAIN')
 
 ROOT_URLCONF = 'config.urls'
 
@@ -146,10 +148,6 @@ SITE_ID = 1
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
-
-LOGIN_REDIRECT_URL = 'clients:home'
-ACCOUNT_LOGOUT_REDIRECT_URL = 'clients:home'
-LOGIN_URL = 'users:login'
 
 CACHE_ENABLE = True
 if CACHE_ENABLE:
