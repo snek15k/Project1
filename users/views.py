@@ -13,8 +13,8 @@ from django.contrib.auth.views import (
 )
 from django.contrib import messages
 from .forms import (
-    RegisterForm, LoginForm, ProfileEditForm,
-    CustomPasswordResetForm, CustomSetPasswordForm
+    RegisterForm, LoginForm,
+    CustomPasswordResetForm, ChangePasswordForm
 )
 from .models import User
 from django.conf import settings
@@ -115,17 +115,29 @@ class VerifyEmailView(TemplateView):
 
 class CustomPasswordResetView(auth_views.PasswordResetView):
     template_name = 'users/registration/password_reset.html'
-    email_template_name = 'users/registration/password_reset_email.html'
     success_url = reverse_lazy('users:password_reset_done')
     form_class = CustomPasswordResetForm
 
     def form_valid(self, form):
+        user = form.save(commit=False)
+        token = user.generate_verification_token()
+
+        verification_link = f"{settings.DOMAIN}/users/verify/{token}/"
+        send_mail(
+            "Восстановление пароля",
+            f"Перейдите по ссылке для смены пароля: {verification_link}",
+            settings.EMAIL_HOST_USER,
+            [user.email],
+            fail_silently=False,
+        )
+
+        messages.success(self.request, 'Письмо со ссылкой для смены пароля отправлено на вашу электронную почту')
         return super().form_valid(form)
 
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     "Установка нового пароля, сброс старого"
-    form_class = CustomSetPasswordForm
+    form_class = ChangePasswordForm
     template_name = 'users/registration/password_reset_confirm.html'
     success_url = reverse_lazy('login')
 
