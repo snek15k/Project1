@@ -27,7 +27,7 @@ class RegisterView(CreateView):
     "Регистрация пользователя, отправка письма с токеном подверждения регистрации"
     form_class = RegisterForm
     template_name = 'users/registration/register.html'
-    success_url = reverse_lazy('users:login')
+    success_url = reverse_lazy('users:register')
 
     def form_valid(self, form):
         user = form.save(commit=False)
@@ -35,7 +35,7 @@ class RegisterView(CreateView):
         user.is_active = False
         user.save()
 
-        verification_link = f"{settings.DOMAIN}/verify/{token}/"
+        verification_link = f"{settings.DOMAIN}/users/verify/{token}/"
         send_mail(
             "Подтверждение регистрации в сервисе рассылок",
             f"Перейдите по ссылке для подтверждения: {verification_link}",
@@ -52,48 +52,48 @@ class LoginView(FormView):
     "Аутентификация пользователя"
     form_class = LoginForm
     template_name = 'users/registration/login.html'
-    success_url = reverse_lazy('profile')
+    success_url = reverse_lazy('clients:home')
 
     def form_valid(self, form):
         user = form.get_user()
-        if not user.is_verified:
-            messages.error(self.request, 'Подтвердите ваш адрес электронной почты')
-            return redirect('login')
+        if not user.is_active:
+           messages.error(self.request, 'Подтвердите ваш адрес электронной почты')
+           return redirect('login')
         return super().form_valid(form)
 
 
 class LogoutView(LogoutView):
     "Выход из системы"
-    next_page = reverse_lazy('login')
+    next_page = reverse_lazy('users:login')
+
+#
+# class ProfileView(LoginRequiredMixin, DetailView):
+#     "Просмотр профиля пользователя"
+#     model = User
+#     template_name = 'users/registration/home.html'
+#     context_object_name = 'profile_user'
+#
+#     def get_object(self):
+#         return self.request.user
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context['can_edit'] = True
+#         return context
 
 
-class ProfileView(LoginRequiredMixin, DetailView):
-    "Просмотр профиля пользователя"
-    model = User
-    template_name = 'users/registration/profile.html'
-    context_object_name = 'profile_user'
-
-    def get_object(self):
-        return self.request.user
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['can_edit'] = True
-        return context
-
-
-class ProfileEditView(LoginRequiredMixin, UpdateView):
-    "Редактирование профиля пользователя"
-    form_class = ProfileEditForm
-    template_name = 'users/registration/profile_edit.html'
-    success_url = reverse_lazy('users:profile')
-
-    def get_object(self):
-        return self.request.user
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Профиль успешно обновлен')
-        return super().form_valid(form)
+# class ProfileEditView(LoginRequiredMixin, UpdateView):
+#     "Редактирование профиля пользователя"
+#     form_class = ProfileEditForm
+#     template_name = 'users/registration/profile_edit.html'
+#     success_url = reverse_lazy('users:profile')
+#
+#     def get_object(self):
+#         return self.request.user
+#
+#     def form_valid(self, form):
+#         messages.success(self.request, 'Профиль успешно обновлен')
+#         return super().form_valid(form)
 
 
 class VerifyEmailView(TemplateView):

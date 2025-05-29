@@ -3,8 +3,8 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from .forms import LoginForm
-from .views import RegisterView, VerifyEmailView, ProfileView, CustomPasswordResetConfirmView, CustomPasswordResetForm, \
-    ProfileEditView, LoginView, LogoutView
+from .views import RegisterView, VerifyEmailView, CustomPasswordResetConfirmView, CustomPasswordResetForm, \
+    LoginView, LogoutView
 
 app_name = 'users'
 
@@ -17,8 +17,8 @@ urlpatterns = [
     path('verify/<str:token>/', VerifyEmailView.as_view(), name='verify-email'),
 
     # Профиль
-    path('profile/', ProfileView.as_view(), name='profile'),
-    path('profile/edit/', ProfileEditView.as_view(), name='profile-edit'),
+    # path('profile/', ProfileView.as_view(), name='profile'),
+    # path('profile/edit/', ProfileEditView.as_view(), name='profile-edit'),
 
     # Сброс пароля
     path('password_reset/',
