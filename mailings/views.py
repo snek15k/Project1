@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -13,6 +14,8 @@ from clients.views import is_manager
 from .models import Mailing, Client
 from .forms import MailingForm
 from .services import send_mailing
+from mailings.models import Mailing
+from clients.models import Client
 
 
 @login_required
@@ -20,14 +23,12 @@ def send_mailing(request):
     if request.method == 'POST':
         form = MailingForm(request.POST)
         if form.is_valid():
-            mailing = form.cleaned_data['mailing']
-            clients = form.cleaned_data['clients']
-            send_to_all = form.cleaned_data['send_to_all']
-
-            if send_to_all:
-                clients = Client.objects.all()
-
-            send_mailing(mailing.pk)
+            try:
+                mailing = form.cleaned_data['mailing']
+                successful = send_mailing(mailing.pk)
+                messages.success(request, f"Рассылка отправлена. Успешных отправок: {successful}")
+            except ValidationError as e:
+                messages.error(request, str(e))
             return redirect('mailing_reports')
     else:
         form = MailingForm()
@@ -37,8 +38,8 @@ def send_mailing(request):
 class MailingCreateView(LoginRequiredMixin, CreateView):
     model = Mailing
     form_class = MailingForm
-    template_name = 'mailing/mailing_form.html'
-    success_url = reverse_lazy('mailing:mailing_list')
+    template_name = 'mailings/mailing_form.html'
+    success_url = reverse_lazy('mailings:mailing_list')
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
@@ -47,10 +48,10 @@ class MailingCreateView(LoginRequiredMixin, CreateView):
 
 class MailingListView(LoginRequiredMixin, ListView):
     model = Mailing
-    template_name = 'mailing/mailing_list.html'
+    template_name = 'mailings/mailing_list.html'
     context_object_name = 'mailings'
 
-    @method_decorator(cache_page(60 * 5, key_prefix="mailing:list"))
+    @method_decorator(cache_page(60, key_prefix="mailing:list"))
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
@@ -60,15 +61,26 @@ class MailingListView(LoginRequiredMixin, ListView):
         else:
             return Mailing.objects.filter(owner=self.request.user)
 
-    def get_cache_key(self):
-        return f"mailing_list_{self.request.user.id}"
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        mailings = self.get_queryset()
+        total_mailings = mailings.count()
+        active_mailings_count = mailings.filter(is_active=True).count()
+        unique_clients = Client.objects.distinct().count()
+
+        context['total_mailings'] = total_mailings
+        context['active_mailings'] = active_mailings_count
+        context['unique_clients'] = unique_clients
+        return context
+
 
 
 class MailingUpdateView(LoginRequiredMixin, UpdateView):
     model = Mailing
     form_class = MailingForm
-    template_name = 'mailing/mailing_form.html'
-    success_url = reverse_lazy('mailing:mailing_list')
+    template_name = 'mailings/mailing_form.html'
+    success_url = reverse_lazy('mailings:mailing_list')
 
     def get_object(self, queryset=None):
         mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
@@ -79,8 +91,8 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
 
 class MailingDeleteView(LoginRequiredMixin, DeleteView):
     model = Mailing
-    template_name = 'mailing/mailing_confirm_delete.html'
-    success_url = reverse_lazy('mailing:mailing_list')
+    template_name = 'mailings/mailing_delete.html'
+    success_url = reverse_lazy('mailings:mailing_list')
 
     def get_object(self, queryset=None):
         mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
@@ -91,7 +103,7 @@ class MailingDeleteView(LoginRequiredMixin, DeleteView):
 
 class MailingDetailView(LoginRequiredMixin, DetailView):
     model = Mailing
-    template_name = 'mailing/mailing_detail.html'
+    template_name = 'mailings/mailing_detail.html'
     context_object_name = 'mailing'
 
     def get_object(self, queryset=None):
@@ -107,7 +119,7 @@ class MailingDeactivateView(LoginRequiredMixin, View):
             raise PermissionDenied("Только менеджеры могут деактивировать рассылки.")
 
         mailing = get_object_or_404(Mailing, pk=pk)
-        return render(request, 'mailing/mailing_deactivate_mailing.html', {'mailing': mailing})
+        return render(request, 'mailings/mailing_deactivate_mailing.html', {'mailing': mailing})
 
     def post(self, request, pk):
         if not is_manager(request.user):
@@ -117,5 +129,5 @@ class MailingDeactivateView(LoginRequiredMixin, View):
         mailing.is_active = False
         mailing.save()
         messages.success(request, f"Рассылка '{mailing.name}' успешно деактивирована")
-        return redirect('mailing:mailing_list')
+        return redirect('mailings:mailing_list')
 

@@ -14,7 +14,7 @@
         <li>Нет клиентов.</li>
     {% endfor %}
 </ul>
-<a href="{% url 'mailing:mailing_update' mailing.pk %}">Редактировать</a>
-<a href="{% url 'mailing:mailing_delete' mailing.pk %}">Удалить</a>
-<a href="{% url 'mailing:mailing_list' %}">Назад к списку рассылок</a>
+<a href="{% url 'mailings:mailing_update' mailing.pk %}">Редактировать</a>
+<a href="{% url 'mailings:mailing_delete' mailing.pk %}">Удалить</a>
+<a href="{% url 'mailings:mailing_list' %}">Назад к списку рассылок</a>
 {% endblock %}

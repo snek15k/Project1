@@ -27,5 +27,3 @@ class Command(BaseCommand):
 
         group.save()
         self.stdout.write(self.style.SUCCESS("Группа 'Менеджеры' создана/обновлена с необходимыми правами."))
-
-

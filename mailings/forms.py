@@ -1,9 +1,12 @@
 from django import forms
 from .models import Mailing
-from clients.models import Client
 
 
-class MailingForm(forms.Form):
-    mailing = forms.ModelChoiceField(queryset=Mailing.objects.all(), label='Рассылка')
-    clients = forms.ModelMultipleChoiceField(queryset=Client.objects.all(), label='Клиенты', required=False)
-    send_to_all = forms.BooleanField(required=False, label='Отправить всем клиентам')
+class MailingForm(forms.ModelForm):
+    class Meta:
+        model = Mailing
+        fields = ['name', 'message', 'clients', 'start_date_time', 'end_date_time', 'status']
+        widgets = {
+            'start_date_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'end_date_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }

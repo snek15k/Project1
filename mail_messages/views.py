@@ -8,10 +8,7 @@ from rest_framework.reverse import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import MessageForm
 from .models import Message
-
-
-def is_manager(user):
-    return user.groups.filter(name='Managers').exists()
+from .utils import is_manager
 
 
 class AddMessageView(LoginRequiredMixin, CreateView):
@@ -38,7 +35,7 @@ class MessageListView(LoginRequiredMixin, ListView):
         else:
             return Message.objects.filter(owner=self.request.user)
 
-    @method_decorator(cache_page(60 * 5, key_prefix="messages:list"))
+    @method_decorator(cache_page(60, key_prefix="messages:list"))
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
@@ -68,7 +65,7 @@ class MessageDeleteView(LoginRequiredMixin, DeleteView):
         return message
 
 
-class MessageDetailView(DetailView):
+class MessageDetailView(LoginRequiredMixin, DetailView):
     model = Message
     template_name = 'mail_messages/message_detail.html'
     context_object_name = 'message'

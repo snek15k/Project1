@@ -143,7 +143,7 @@ SITE_ID = 1
 
 #ACCOUNT_EMAIL_REQUIRED = True
 #ACCOUNT_USERNAME_REQUIRED = False
-#ACCOUNT_LOGIN_METHODS = ['username', 'email']
+
 
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']

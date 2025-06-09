@@ -4,7 +4,7 @@ from django.urls import path, reverse_lazy
 
 from .forms import LoginForm
 from .views import RegisterView, VerifyEmailView, CustomPasswordResetConfirmView, CustomPasswordResetForm, \
-    LoginView, LogoutView
+    LoginView, LogoutView, UserBlockView, UserUnlockView, UserListView
 
 app_name = 'users'
 
@@ -42,4 +42,9 @@ urlpatterns = [
              template_name='users/registration/password_reset_complete.html'
          ),
          name='password_reset_complete'),
+
+    # Блокировка
+    path('block/<int:pk>/', UserBlockView.as_view(), name='block_user'),
+    path('unblock/<int:pk>/', UserUnlockView.as_view(), name='unblock_user'),
+    path('users/', UserListView.as_view(), name='user_list'),
 ]

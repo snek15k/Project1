@@ -17,10 +17,8 @@ class Mailing(models.Model):
     name = models.CharField(max_length=150, verbose_name='Название рассылки')
     message = models.ForeignKey(Message, on_delete=models.CASCADE, verbose_name='Сообщение', related_name='mailings')
     clients = models.ManyToManyField(Client, verbose_name='Клиенты', related_name='mailings')
-    start_date_time = models.DateTimeField(verbose_name='Дата и время первой отправки', blank=True, null=True,
-                                           editable=False)
-    end_date_time = models.DateTimeField(verbose_name='Дата и время окончания отправки', blank=True, null=True,
-                                         editable=False)
+    start_date_time = models.DateTimeField(verbose_name='Дата и время первой отправки', blank=True, null=True,)
+    end_date_time = models.DateTimeField(verbose_name='Дата и время окончания отправки', blank=True, null=True)
     status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='created', verbose_name='Статус',
                               db_index=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='Владелец', )

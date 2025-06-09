@@ -1,7 +1,8 @@
 from functools import reduce
 from django.core.mail import send_mail
-from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
+from django.http import Http404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse_lazy, reverse
 from django.views import View
 from django.views.generic import (
     CreateView, FormView, UpdateView,
@@ -12,15 +13,18 @@ from django.contrib.auth.views import (
     LogoutView,
 )
 from django.contrib import messages
+
+from clients.views import is_manager
 from .forms import (
     RegisterForm, LoginForm,
     CustomPasswordResetForm, ChangePasswordForm
 )
 from .models import User
 from django.conf import settings
-from django.views.generic import UpdateView
+from django.views.generic import UpdateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import views as auth_views
+
 
 
 class RegisterView(CreateView):
@@ -66,35 +70,6 @@ class LogoutView(LogoutView):
     "Выход из системы"
     next_page = reverse_lazy('users:login')
 
-#
-# class ProfileView(LoginRequiredMixin, DetailView):
-#     "Просмотр профиля пользователя"
-#     model = User
-#     template_name = 'users/registration/home.html'
-#     context_object_name = 'profile_user'
-#
-#     def get_object(self):
-#         return self.request.user
-#
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         context['can_edit'] = True
-#         return context
-
-
-# class ProfileEditView(LoginRequiredMixin, UpdateView):
-#     "Редактирование профиля пользователя"
-#     form_class = ProfileEditForm
-#     template_name = 'users/registration/profile_edit.html'
-#     success_url = reverse_lazy('users:profile')
-#
-#     def get_object(self):
-#         return self.request.user
-#
-#     def form_valid(self, form):
-#         messages.success(self.request, 'Профиль успешно обновлен')
-#         return super().form_valid(form)
-
 
 class VerifyEmailView(TemplateView):
     """Подтверждение email по токену"""
@@ -135,7 +110,7 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
         return super().form_valid(form)
 
 
-class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     "Установка нового пароля, сброс старого"
     form_class = ChangePasswordForm
     template_name = 'users/registration/password_reset_confirm.html'
@@ -145,3 +120,41 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
         response = super().form_valid(form)
         messages.success(self.request, 'Пароль успешно изменён')
         return response
+
+
+class UserBlockView(LoginRequiredMixin, View):
+    """Блокировка пользователя менеджером"""
+
+    def post(self, request, pk):
+        if not is_manager(request.user):
+            raise Http404("У вас нет прав для выполнения этого действия.")
+
+        user = get_object_or_404(User, id=pk)
+        user.is_active = False
+        user.save()
+        return redirect(reverse("clients:home"))
+
+
+class UserUnlockView(LoginRequiredMixin, View):
+    """Разблокировка пользователя менеджером"""
+
+    def post(self, request, pk):
+        if not is_manager(request.user):
+            raise Http404("У вас нет прав для выполнения этого действия.")
+
+        user = get_object_or_404(User, id=pk)
+        user.is_active = True
+        user.save()
+        return redirect(reverse("clients:home"))
+
+
+class UserListView(LoginRequiredMixin, ListView):
+    """Список пользователей для менеджеров"""
+    model = User
+    template_name = 'users/user_list.html'
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        if not is_manager(self.request.user):
+            raise Http404("У вас нет прав для просмотра этой страницы.")
+        return User.objects.all().order_by('-is_active', 'email')
