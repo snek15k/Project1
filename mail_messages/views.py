@@ -1,17 +1,13 @@
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-)
-from django.contrib import messages
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
+                                  UpdateView)
 from rest_framework.reverse import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
+
 from .forms import MessageForm
 from .models import Message
 from .utils import is_manager

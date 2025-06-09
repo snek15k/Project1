@@ -1,28 +1,24 @@
+from pyexpat.errors import messages
+
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import cache_page
-from django.views.generic import (
-    ListView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-    DetailView,
-    TemplateView,
-)
-from pyexpat.errors import messages
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
+                                  TemplateView, UpdateView)
 from rest_framework.exceptions import PermissionDenied
-from django.contrib.auth.mixins import LoginRequiredMixin
 
-from clients.views import is_manager
-from .models import Mailing, Client
-from .forms import MailingForm
-from .services import send_mailing, get_mailing_statistics
-from mailings.models import Mailing
 from clients.models import Client
+from clients.views import is_manager
+from mailings.models import Mailing
+
+from .forms import MailingForm
+from .models import Client, Mailing
+from .services import get_mailing_statistics, send_mailing
 
 
 @login_required
@@ -74,7 +70,7 @@ class MailingListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
 
         if is_manager(self.request.user):
-             statistics = get_mailing_statistics()
+            statistics = get_mailing_statistics()
         else:
             statistics = get_mailing_statistics(self.request.user)
 

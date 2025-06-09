@@ -3,10 +3,11 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from mail_messages.utils import is_manager
-from .models import Mailing
-from clients.models import Client
 from attempt.models import MailingLog
+from clients.models import Client
+from mail_messages.utils import is_manager
+
+from .models import Mailing
 
 
 def validate_mailing_time(mailing):
@@ -73,6 +74,7 @@ def send_single_email(mailing, client):
     MailingLog.objects.create(
         mailing=mailing, client=client, status="successfully", server_response="OK"
     )
+
 
 def get_mailing_statistics(user=None):
     "Возвращает статистику рассылок для всех пользователей или для конкретного пользователя"

@@ -1,7 +1,8 @@
 from django.db import models
 from django.utils import timezone
-from mailings.models import Mailing
+
 from clients.models import Client
+from mailings.models import Mailing
 
 
 class MailingLog(models.Model):

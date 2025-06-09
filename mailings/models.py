@@ -1,6 +1,6 @@
 from allauth.account.views import email
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 from clients.models import Client
 from mail_messages.models import Message

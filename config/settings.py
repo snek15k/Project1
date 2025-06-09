@@ -64,9 +64,9 @@ SERVER_EMAIL =  EMAIL_HOST_USER
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 MANAGERS_GROUP = 'Менеджеры'
 
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'login'
-LOGOUT_REDIRECT_URL = 'login'
+LOGIN_URL = 'users:login'
+LOGIN_REDIRECT_URL = 'clients:home'
+LOGOUT_REDIRECT_URL = 'users:login'
 DOMAIN = os.getenv('DOMAIN', '127.0.0.1:8000')
 
 ROOT_URLCONF = 'config.urls'

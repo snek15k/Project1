@@ -1,29 +1,23 @@
 from functools import reduce
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import views as auth_views, update_session_auth_hash
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LogoutView, PasswordResetConfirmView
 from django.core.mail import send_mail
 from django.http import Http404
-from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse_lazy, reverse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import (
-    CreateView,
-    FormView,
-    UpdateView,
-    DetailView,
-    TemplateView,
-)
-from django.contrib.auth.views import (
-    PasswordResetConfirmView,
-    LogoutView,
-)
-from django.contrib import messages
+from django.views.generic import (CreateView, DetailView, FormView, ListView,
+                                  TemplateView, UpdateView)
 
 from clients.views import is_manager
-from .forms import RegisterForm, LoginForm, CustomPasswordResetForm, ChangePasswordForm
+
+from .forms import (ChangePasswordForm, CustomPasswordResetForm, LoginForm,
+                    RegisterForm)
 from .models import User
-from django.conf import settings
-from django.views.generic import UpdateView, ListView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth import views as auth_views
 
 
 class RegisterView(CreateView):
@@ -59,7 +53,9 @@ class LoginView(FormView):
 
     form_class = LoginForm
     template_name = "users/registration/login.html"
-    success_url = reverse_lazy("clients:home")
+
+    def get_success_url(self):
+        return self.request.POST.get('next', reverse_lazy('clients:home'))
 
     def form_valid(self, form):
         user = form.get_user()
@@ -121,8 +117,8 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['domain'] = settings.DOMAIN
-        context['protocol'] = 'https' if self.request.is_secure() else 'http'
+        context["domain"] = settings.DOMAIN
+        context["protocol"] = "https" if self.request.is_secure() else "http"
         return context
 
 
@@ -131,10 +127,11 @@ class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
 
     form_class = ChangePasswordForm
     template_name = "users/registration/password_reset_confirm.html"
-    success_url = ("users:password_reset_complete")
+    success_url = reverse_lazy("users:password_reset_complete")
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        update_session_auth_hash(self.request, self.request.user)
         messages.success(self.request, "Пароль успешно изменён")
         return response
 
