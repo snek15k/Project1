@@ -6,10 +6,13 @@ from django.contrib.auth import views as auth_views, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LogoutView, PasswordResetConfirmView
 from django.core.mail import send_mail
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.cache import never_cache
 from django.views.generic import (CreateView, DetailView, FormView, ListView,
                                   TemplateView, UpdateView)
 
@@ -121,7 +124,7 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
         context["protocol"] = "https" if self.request.is_secure() else "http"
         return context
 
-
+@method_decorator(never_cache, name='dispatch')
 class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     "Установка нового пароля, сброс старого"
 
@@ -130,8 +133,12 @@ class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     success_url = reverse_lazy("users:password_reset_complete")
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        update_session_auth_hash(self.request, self.request.user)
+        if form.errors:
+            print("Ошибки формы:", form.errors)
+            return self.form_invalid(form)
+        with transaction.atomic():
+            response = super().form_valid(form)
+            update_session_auth_hash(self.request, self.request.user)
         messages.success(self.request, "Пароль успешно изменён")
         return response
 
