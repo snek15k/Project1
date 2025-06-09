@@ -2,7 +2,7 @@ from functools import reduce
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import views as auth_views, update_session_auth_hash
+from django.contrib.auth import views as auth_views, update_session_auth_hash, login, authenticate
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LogoutView, PasswordResetConfirmView
 from django.core.mail import send_mail
@@ -65,6 +65,9 @@ class LoginView(FormView):
         if not user.is_active:
             messages.error(self.request, "Подтвердите ваш адрес электронной почты")
             return redirect("login")
+
+        login(self.request, user)
+
         return super().form_valid(form)
 
 
