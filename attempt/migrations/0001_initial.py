@@ -10,25 +10,74 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('clients', '0003_alter_client_options'),
-        ('mailings', '0003_alter_mailing_options'),
+        ("clients", "0003_alter_client_options"),
+        ("mailings", "0003_alter_mailing_options"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MailingLog',
+            name="MailingLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date_time', models.DateTimeField(db_index=True, default=django.utils.timezone.now, editable=False, verbose_name='Дата и время попытки')),
-                ('status', models.CharField(choices=[('successfully', 'Успешно'), ('not_successful', 'Не успешно')], db_index=True, default='not_successful', max_length=25, verbose_name='Статус')),
-                ('server_response', models.TextField(blank=True, null=True, verbose_name='Ответ почтового сервера')),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attempts', to='clients.client', verbose_name='Получатель')),
-                ('mailing', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attempts', to='mailings.mailing', verbose_name='Рассылка')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "date_time",
+                    models.DateTimeField(
+                        db_index=True,
+                        default=django.utils.timezone.now,
+                        editable=False,
+                        verbose_name="Дата и время попытки",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("successfully", "Успешно"),
+                            ("not_successful", "Не успешно"),
+                        ],
+                        db_index=True,
+                        default="not_successful",
+                        max_length=25,
+                        verbose_name="Статус",
+                    ),
+                ),
+                (
+                    "server_response",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Ответ почтового сервера"
+                    ),
+                ),
+                (
+                    "client",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="attempts",
+                        to="clients.client",
+                        verbose_name="Получатель",
+                    ),
+                ),
+                (
+                    "mailing",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="attempts",
+                        to="mailings.mailing",
+                        verbose_name="Рассылка",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Попытка рассылки',
-                'verbose_name_plural': 'Попытки рассылки',
-                'ordering': ['-date_time'],
+                "verbose_name": "Попытка рассылки",
+                "verbose_name_plural": "Попытки рассылки",
+                "ordering": ["-date_time"],
             },
         ),
     ]

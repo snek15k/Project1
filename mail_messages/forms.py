@@ -5,5 +5,4 @@ from .models import Message
 class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
-        fields = ['message_subject', 'message_body']
-
+        fields = ["message_subject", "message_body"]

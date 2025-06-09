@@ -9,28 +9,94 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('clients', '0001_initial'),
-        ('mail_messages', '0001_initial'),
+        ("clients", "0001_initial"),
+        ("mail_messages", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Mailing',
+            name="Mailing",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=150, verbose_name='Название рассылки')),
-                ('start_date_time', models.DateTimeField(blank=True, editable=False, null=True, verbose_name='Дата и время первой отправки')),
-                ('end_date_time', models.DateTimeField(blank=True, editable=False, null=True, verbose_name='Дата и время окончания отправки')),
-                ('status', models.CharField(choices=[('created', 'Создана'), ('started', 'Запущена'), ('completed', 'Завершена')], db_index=True, default='created', max_length=25, verbose_name='Статус')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Дата изменения')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Активна')),
-                ('clients', models.ManyToManyField(related_name='mailings', to='clients.client', verbose_name='Клиенты')),
-                ('message', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='mailings', to='mail_messages.message', verbose_name='Сообщение')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=150, verbose_name="Название рассылки"),
+                ),
+                (
+                    "start_date_time",
+                    models.DateTimeField(
+                        blank=True,
+                        editable=False,
+                        null=True,
+                        verbose_name="Дата и время первой отправки",
+                    ),
+                ),
+                (
+                    "end_date_time",
+                    models.DateTimeField(
+                        blank=True,
+                        editable=False,
+                        null=True,
+                        verbose_name="Дата и время окончания отправки",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("created", "Создана"),
+                            ("started", "Запущена"),
+                            ("completed", "Завершена"),
+                        ],
+                        db_index=True,
+                        default="created",
+                        max_length=25,
+                        verbose_name="Статус",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="Дата создания"
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Дата изменения"),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(default=True, verbose_name="Активна"),
+                ),
+                (
+                    "clients",
+                    models.ManyToManyField(
+                        related_name="mailings",
+                        to="clients.client",
+                        verbose_name="Клиенты",
+                    ),
+                ),
+                (
+                    "message",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="mailings",
+                        to="mail_messages.message",
+                        verbose_name="Сообщение",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Рассылка',
-                'verbose_name_plural': 'Рассылки',
+                "verbose_name": "Рассылка",
+                "verbose_name_plural": "Рассылки",
             },
         ),
     ]

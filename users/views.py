@@ -5,8 +5,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.views import View
 from django.views.generic import (
-    CreateView, FormView, UpdateView,
-    DetailView, TemplateView
+    CreateView,
+    FormView,
+    UpdateView,
+    DetailView,
+    TemplateView,
 )
 from django.contrib.auth.views import (
     PasswordResetConfirmView,
@@ -15,10 +18,7 @@ from django.contrib.auth.views import (
 from django.contrib import messages
 
 from clients.views import is_manager
-from .forms import (
-    RegisterForm, LoginForm,
-    CustomPasswordResetForm, ChangePasswordForm
-)
+from .forms import RegisterForm, LoginForm, CustomPasswordResetForm, ChangePasswordForm
 from .models import User
 from django.conf import settings
 from django.views.generic import UpdateView, ListView
@@ -26,12 +26,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import views as auth_views
 
 
-
 class RegisterView(CreateView):
     "Регистрация пользователя, отправка письма с токеном подверждения регистрации"
+
     form_class = RegisterForm
-    template_name = 'users/registration/register.html'
-    success_url = reverse_lazy('users:register')
+    template_name = "users/registration/register.html"
+    success_url = reverse_lazy("users:register")
 
     def form_valid(self, form):
         user = form.save(commit=False)
@@ -48,50 +48,57 @@ class RegisterView(CreateView):
             fail_silently=False,
         )
 
-        messages.success(self.request, 'Письмо с подтверждением отправлено на вашу электронную почту')
+        messages.success(
+            self.request, "Письмо с подтверждением отправлено на вашу электронную почту"
+        )
         return super().form_valid(form)
 
 
 class LoginView(FormView):
     "Аутентификация пользователя"
+
     form_class = LoginForm
-    template_name = 'users/registration/login.html'
-    success_url = reverse_lazy('clients:home')
+    template_name = "users/registration/login.html"
+    success_url = reverse_lazy("clients:home")
 
     def form_valid(self, form):
         user = form.get_user()
         if not user.is_active:
-           messages.error(self.request, 'Подтвердите ваш адрес электронной почты')
-           return redirect('login')
+            messages.error(self.request, "Подтвердите ваш адрес электронной почты")
+            return redirect("login")
         return super().form_valid(form)
 
 
 class LogoutView(LogoutView):
     "Выход из системы"
-    next_page = reverse_lazy('users:login')
+
+    next_page = reverse_lazy("users:login")
 
 
 class VerifyEmailView(TemplateView):
     """Подтверждение email по токену"""
-    template_name = 'users/registration/verify_email.html'
+
+    template_name = "users/registration/verify_email.html"
 
     def get(self, request, token):
         try:
             user = User.objects.get(verification_token=token)
             user.is_active = True
-            user.verification_token = ''
+            user.verification_token = ""
             user.save()
-            messages.success(request, 'Ваша электронная почта успешно подтверждена.')
-            return redirect('users:login')
+            messages.success(request, "Ваша электронная почта успешно подтверждена.")
+            return redirect("users:login")
         except User.DoesNotExist:
-            messages.error(request, 'Недействительная ссылка подтверждения.')
-            return redirect('users:register')
+            messages.error(request, "Недействительная ссылка подтверждения.")
+            return redirect("users:register")
 
 
 class CustomPasswordResetView(auth_views.PasswordResetView):
-    template_name = 'users/registration/password_reset.html'
-    success_url = reverse_lazy('users:password_reset_done')
+    template_name = "users/registration/password_reset.html"
+    success_url = reverse_lazy("users:password_reset_done")
     form_class = CustomPasswordResetForm
+    email_template_name = "users/registration/password_reset_email.html"
+    subject_template_name = "users/registration/password_reset_subject.txt"
 
     def form_valid(self, form):
         user = form.save(commit=False)
@@ -106,19 +113,29 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
             fail_silently=False,
         )
 
-        messages.success(self.request, 'Письмо со ссылкой для смены пароля отправлено на вашу электронную почту')
+        messages.success(
+            self.request,
+            "Письмо со ссылкой для смены пароля отправлено на вашу электронную почту",
+        )
         return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['domain'] = settings.DOMAIN
+        context['protocol'] = 'https' if self.request.is_secure() else 'http'
+        return context
 
 
 class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     "Установка нового пароля, сброс старого"
+
     form_class = ChangePasswordForm
-    template_name = 'users/registration/password_reset_confirm.html'
-    success_url = reverse_lazy('login')
+    template_name = "users/registration/password_reset_confirm.html"
+    success_url = ("users:password_reset_complete")
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, 'Пароль успешно изменён')
+        messages.success(self.request, "Пароль успешно изменён")
         return response
 
 
@@ -150,11 +167,12 @@ class UserUnlockView(LoginRequiredMixin, View):
 
 class UserListView(LoginRequiredMixin, ListView):
     """Список пользователей для менеджеров"""
+
     model = User
-    template_name = 'users/user_list.html'
-    context_object_name = 'object_list'
+    template_name = "users/user_list.html"
+    context_object_name = "object_list"
 
     def get_queryset(self):
         if not is_manager(self.request.user):
             raise Http404("У вас нет прав для просмотра этой страницы.")
-        return User.objects.all().order_by('-is_active', 'email')
+        return User.objects.all().order_by("-is_active", "email")

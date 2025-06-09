@@ -7,22 +7,35 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Client',
+            name="Client",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('email', models.EmailField(db_index=True, max_length=254, unique=True)),
-                ('full_name', models.CharField(max_length=100, verbose_name='ФИО')),
-                ('comment', models.TextField(blank=True, null=True, verbose_name='Комментарий')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(db_index=True, max_length=254, unique=True),
+                ),
+                ("full_name", models.CharField(max_length=100, verbose_name="ФИО")),
+                (
+                    "comment",
+                    models.TextField(blank=True, null=True, verbose_name="Комментарий"),
+                ),
             ],
             options={
-                'verbose_name': 'Клиент',
-                'verbose_name_plural': 'Клиенты',
-                'ordering': ('email',),
+                "verbose_name": "Клиент",
+                "verbose_name_plural": "Клиенты",
+                "ordering": ("email",),
             },
         ),
     ]

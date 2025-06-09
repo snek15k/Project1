@@ -67,7 +67,7 @@ MANAGERS_GROUP = 'Менеджеры'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'login'
 LOGOUT_REDIRECT_URL = 'login'
-DOMAIN = os.getenv('DOMAIN')
+DOMAIN = os.getenv('DOMAIN', '127.0.0.1:8000')
 
 ROOT_URLCONF = 'config.urls'
 
