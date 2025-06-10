@@ -1,15 +1,15 @@
 {% extends "clients/base.html" %}
 
 {% block content %}
-<h1>Отчеты о рассылках</h1>
+<h1>История попыток рассылок</h1>
 
 {% if has_logs %}
-<table>
+<table class="table">
     <thead>
         <tr>
             <th>Рассылка</th>
             <th>Клиент</th>
-            <th>Дата и время</th>
+            <th>Дата</th>
             <th>Статус</th>
             <th>Ответ сервера</th>
         </tr>
@@ -21,12 +21,16 @@
             <td>{{ log.client }}</td>
             <td>{{ log.date_time }}</td>
             <td>{{ log.get_status_display }}</td>
-            <td>{{ log.server_response|default:"-" }}</td>
+            <td>{{ log.server_response|default:"—" }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-    <p>Нет данных о попытках рассылок.</p>
+<p>Нет данных о рассылках.</p>
 {% endif %}
+
+<a href="{% url 'attempt:mailing_stats' %}" class="btn">
+    Перейти к статистике
+</a>
 {% endblock %}

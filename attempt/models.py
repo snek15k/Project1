@@ -51,3 +51,16 @@ class MailingLog(models.Model):
         return (
             f"{self.mailing} - {self.client.email} - {self.date_time} - {self.status}"
         )
+
+    @classmethod
+    def get_user_stats(cls, user):
+        """Общая статистика по пользователю"""
+        logs = cls.objects.filter(mailing__owner=user)
+        total = logs.count()
+        success = logs.filter(status="successfully").count()
+        return {
+            "total": total,
+            "success": success,
+            "failed": total - success,
+            "success_rate": (success / total * 100) if total > 0 else 0,
+        }
