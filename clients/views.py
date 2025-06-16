@@ -1,3 +1,6 @@
+from django.http import request, HttpResponseForbidden, HttpResponseRedirect
+from functools import wraps
+from allauth.core.internal.httpkit import redirect
 from django.contrib.auth import get_user
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -6,16 +9,13 @@ from django.views.decorators.cache import cache_page
 from django.views.generic import (CreateView, DeleteView, ListView,
                                   TemplateView, UpdateView)
 from rest_framework.generics import get_object_or_404
-from rest_framework.reverse import reverse_lazy
+from rest_framework.reverse import reverse_lazy, reverse
 
+from mail_messages.utils import is_manager
 from mailings.services import get_mailing_statistics
 
 from .forms import ClientForm
 from .models import Client
-
-
-def is_manager(user):
-    return user.groups.filter(name="Managers").exists()
 
 
 class HomeView(TemplateView):
@@ -58,21 +58,19 @@ class ListClientsView(LoginRequiredMixin, ListView):
     template_name = "clients/client_list.html"
     context_object_name = "clients"
 
+    @method_decorator(cache_page(60 * 5))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
-        if is_manager(self.request.user):
-            queryset = Client.objects.all()
-        else:
-            queryset = Client.objects.filter(owner=self.request.user)
-        return queryset
+        if self.request.user.groups.filter(name="Managers").exists():
+            return Client.objects.all()
+        return Client.objects.filter(owner=self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["clients"] = self.get_queryset()
+        context["is_manager"] = self.request.user.groups.filter(name="Managers").exists()
         return context
-
-    @method_decorator(cache_page(60 * 5, key_prefix="client_list"))
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
 
 
 class ClientUpdateView(LoginRequiredMixin, UpdateView):

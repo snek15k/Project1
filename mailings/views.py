@@ -1,10 +1,11 @@
+from django.http import HttpResponseRedirect
 from pyexpat.errors import messages
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import cache_page
@@ -57,27 +58,28 @@ class MailingListView(LoginRequiredMixin, ListView):
     context_object_name = "mailings"
 
     @method_decorator(cache_page(60, key_prefix="mailing:list"))
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        if is_manager(self.request.user):
+        if self.request.user.groups.filter(name="Managers").exists():
             return Mailing.objects.all()
-        else:
-            return Mailing.objects.filter(owner=self.request.user)
+        return Mailing.objects.filter(owner=self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        if is_manager(self.request.user):
+        if self.request.user.groups.filter(name="Managers").exists():
             statistics = get_mailing_statistics()
         else:
             statistics = get_mailing_statistics(self.request.user)
 
-        context["total_mailings"] = statistics["total_mailings"]
-        context["active_mailings"] = statistics["active_mailings"]
-        context["unique_clients"] = statistics["unique_clients"]
-
+        context.update({
+            "total_mailings": statistics["total_mailings"],
+            "active_mailings": statistics["active_mailings"],
+            "unique_clients": statistics["unique_clients"],
+            "is_manager": self.request.user.groups.filter(name="Managers").exists()
+        })
         return context
 
 

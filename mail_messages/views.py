@@ -1,12 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
-from rest_framework.reverse import reverse_lazy
+from rest_framework.reverse import reverse_lazy, reverse
 
 from .forms import MessageForm
 from .models import Message
@@ -31,15 +32,19 @@ class MessageListView(LoginRequiredMixin, ListView):
     template_name = "mail_messages/message_list.html"
     context_object_name = "messages"
 
-    def get_queryset(self):
-        if is_manager(self.request.user):
-            return Message.objects.all()
-        else:
-            return Message.objects.filter(owner=self.request.user)
-
     @method_decorator(cache_page(60, key_prefix="messages:list"))
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        if self.request.user.groups.filter(name="Managers").exists():
+            return Message.objects.all()
+        return Message.objects.filter(owner=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_manager"] = self.request.user.groups.filter(name="Managers").exists()
+        return context
 
 
 class MessageUpdateView(LoginRequiredMixin, UpdateView):

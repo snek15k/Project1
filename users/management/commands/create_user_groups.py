@@ -11,7 +11,7 @@ class Command(BaseCommand):
     help = "Создание группы Менеджеры и назначение прав"
 
     def handle(self, *args, **kwargs):
-        group, created = Group.objects.get_or_create(name="Менеджеры")
+        group, created = Group.objects.get_or_create(name="Managers")
 
         permissions = [
             ("clients", "client", "can_view_client"),
@@ -30,6 +30,6 @@ class Command(BaseCommand):
         group.save()
         self.stdout.write(
             self.style.SUCCESS(
-                "Группа 'Менеджеры' создана/обновлена с необходимыми правами."
+                "Группа 'Managers' создана/обновлена с необходимыми правами."
             )
         )

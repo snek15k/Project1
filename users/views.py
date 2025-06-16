@@ -7,7 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LogoutView, PasswordResetConfirmView
 from django.core.mail import send_mail
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
@@ -15,6 +15,7 @@ from django.views import View
 from django.views.decorators.cache import never_cache
 from django.views.generic import (CreateView, DetailView, FormView, ListView,
                                   TemplateView, UpdateView)
+from rest_framework import request
 
 from clients.views import is_manager
 
@@ -36,7 +37,7 @@ class RegisterView(CreateView):
         user.is_active = False
         user.save()
 
-        verification_link = f"{settings.DOMAIN}/users/verify/{token}/"
+        verification_link = f"http://{settings.DOMAIN}/users/verify/{token}/"
         send_mail(
             "Подтверждение регистрации в сервисе рассылок",
             f"Перейдите по ссылке для подтверждения: {verification_link}",
@@ -181,5 +182,12 @@ class UserListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         if not is_manager(self.request.user):
-            raise Http404("У вас нет прав для просмотра этой страницы.")
+            return HttpResponseForbidden('Доступ запрещен', status=403)
         return User.objects.all().order_by("-is_active", "email")
+
+    def dispatch(self, request, *args, **kwargs):
+        if not is_manager(self.request.user):
+            return HttpResponseRedirect(reverse('login'))
+        if not self.request.user.has_perm('app.view_user_list'):
+            return HttpResponseForbidden('У вас нет прав на просмотр этого списка')
+        return super().dispatch(request, *args, **kwargs)
