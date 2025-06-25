@@ -1,0 +1,44 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Рассылки{% endblock %}
+
+{% block content %}
+<h2>Рассылки</h2>
+<a class="btn btn-primary mb-3" href="{% url 'mailing-add' %}">Добавить рассылку</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Статус</th>
+            <th>Сообщение</th>
+            <th>Дата начала</th>
+            <th>Дата окончания</th>
+            <th>Действия</th>
+            <th>Отправка</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for mailing in mailings %}
+        <tr>
+            <td>{{ mailing.id }}</td>
+            <td>{{ mailing.status }}</td>
+            <td>{{ mailing.message.subject }}</td>
+            <td>{{ mailing.start_time }}</td>
+            <td>{{ mailing.end_time }}</td>
+            <td>
+                <a class="btn btn-sm btn-secondary" href="{% url 'mailing-edit' mailing.pk %}">Редактировать</a>
+                <a class="btn btn-sm btn-danger" href="{% url 'mailing-delete' mailing.pk %}">Удалить</a>
+            </td>
+            <td>
+                <form method="post" action="{% url 'mailing-send' mailing.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success">Отправить</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Рассылки не найдены</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

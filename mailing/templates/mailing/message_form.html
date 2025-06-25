@@ -1,0 +1,15 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Добавить сообщение{% endblock %}
+
+{% block content %}
+<h2>{% if object %}Редактировать сообщение{% else %}Добавить сообщение{% endif %}</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a href="{% url 'message-list' %}" class="btn btn-secondary">Отмена</a>
+</form>
+{% endblock %}
