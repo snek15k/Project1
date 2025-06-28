@@ -2,9 +2,17 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from .forms import LoginForm
-from .views import (CustomPasswordResetConfirmView, CustomPasswordResetForm,
-                    LoginView, LogoutView, RegisterView, UserBlockView,
-                    UserListView, UserUnlockView, VerifyEmailView)
+from .views import (
+    CustomPasswordResetConfirmView,
+    CustomPasswordResetForm,
+    LoginView,
+    LogoutView,
+    RegisterView,
+    UserBlockView,
+    UserListView,
+    UserUnlockView,
+    VerifyEmailView,
+)
 
 app_name = "users"
 

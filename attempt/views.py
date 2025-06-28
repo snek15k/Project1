@@ -30,13 +30,12 @@ class MailingStatsView(LoginRequiredMixin, TemplateView):
         mailing_stats = []
         for mailing in mailings:
             stats = MailingLog.get_mailing_stats(mailing)
-            mailing_stats.append({
-                "mailing": mailing,
-                **stats
-            })
+            mailing_stats.append({"mailing": mailing, **stats})
 
-        context.update({
-            "user_stats": user_stats,
-            "mailing_stats": mailing_stats,
-        })
+        context.update(
+            {
+                "user_stats": user_stats,
+                "mailing_stats": mailing_stats,
+            }
+        )
         return context

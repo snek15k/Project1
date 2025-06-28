@@ -5,8 +5,13 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
-                                  UpdateView)
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 from rest_framework.reverse import reverse_lazy, reverse
 
 from .forms import MessageForm
@@ -43,7 +48,9 @@ class MessageListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["is_manager"] = self.request.user.groups.filter(name="Managers").exists()
+        context["is_manager"] = self.request.user.groups.filter(
+            name="Managers"
+        ).exists()
         return context
 
 

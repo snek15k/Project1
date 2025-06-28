@@ -2,7 +2,12 @@ from functools import reduce
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import views as auth_views, update_session_auth_hash, login, authenticate
+from django.contrib.auth import (
+    views as auth_views,
+    update_session_auth_hash,
+    login,
+    authenticate,
+)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LogoutView, PasswordResetConfirmView
 from django.core.mail import send_mail
@@ -13,14 +18,19 @@ from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
-from django.views.generic import (CreateView, DetailView, FormView, ListView,
-                                  TemplateView, UpdateView)
+from django.views.generic import (
+    CreateView,
+    DetailView,
+    FormView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 from rest_framework import request
 
 from clients.views import is_manager
 
-from .forms import (ChangePasswordForm, CustomPasswordResetForm, LoginForm,
-                    RegisterForm)
+from .forms import ChangePasswordForm, CustomPasswordResetForm, LoginForm, RegisterForm
 from .models import User
 
 
@@ -59,7 +69,7 @@ class LoginView(FormView):
     template_name = "users/registration/login.html"
 
     def get_success_url(self):
-        return self.request.POST.get('next', reverse_lazy('clients:home'))
+        return self.request.POST.get("next", reverse_lazy("clients:home"))
 
     def form_valid(self, form):
         user = form.get_user()
@@ -128,7 +138,8 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
         context["protocol"] = "https" if self.request.is_secure() else "http"
         return context
 
-@method_decorator(never_cache, name='dispatch')
+
+@method_decorator(never_cache, name="dispatch")
 class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     "Установка нового пароля, сброс старого"
 
@@ -182,12 +193,12 @@ class UserListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         if not is_manager(self.request.user):
-            return HttpResponseForbidden('Доступ запрещен', status=403)
+            return HttpResponseForbidden("Доступ запрещен", status=403)
         return User.objects.all().order_by("-is_active", "email")
 
     def dispatch(self, request, *args, **kwargs):
         if not is_manager(self.request.user):
-            return HttpResponseRedirect(reverse('login'))
-        if not self.request.user.has_perm('app.view_user_list'):
-            return HttpResponseForbidden('У вас нет прав на просмотр этого списка')
+            return HttpResponseRedirect(reverse("login"))
+        if not self.request.user.has_perm("app.view_user_list"):
+            return HttpResponseForbidden("У вас нет прав на просмотр этого списка")
         return super().dispatch(request, *args, **kwargs)

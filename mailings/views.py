@@ -9,8 +9,14 @@ from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import cache_page
-from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
-                                  TemplateView, UpdateView)
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 from rest_framework.exceptions import PermissionDenied
 
 from clients.models import Client
@@ -74,12 +80,14 @@ class MailingListView(LoginRequiredMixin, ListView):
         else:
             statistics = get_mailing_statistics(self.request.user)
 
-        context.update({
-            "total_mailings": statistics["total_mailings"],
-            "active_mailings": statistics["active_mailings"],
-            "unique_clients": statistics["unique_clients"],
-            "is_manager": self.request.user.groups.filter(name="Managers").exists()
-        })
+        context.update(
+            {
+                "total_mailings": statistics["total_mailings"],
+                "active_mailings": statistics["active_mailings"],
+                "unique_clients": statistics["unique_clients"],
+                "is_manager": self.request.user.groups.filter(name="Managers").exists(),
+            }
+        )
         return context
 
 
